@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecipeApp</title>
+    <meta name="description" content="sample text">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- CSRFトークン -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/assets/css/sanitize.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="page-home">
+
+<section id="loading">
+    <div class="loading">
+        <div class="pack"></div>
+        <div class="fuels">
+            <div></div><div></div><div></div><div></div>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Top Navbar -->
+    <header class="top-navbar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="メニューを開く">
+            <span></span>
+        </button>
+        <div class="title">RecipeApp</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="レシピ名やカテゴリで検索..." />
+            <span class="search-icon">
+        <img src="/images/icons/search.svg" alt="検索" />
+      </span>
+        </div>
+        <div class="add-button">
+            <a href="/recipes/new" style="color:white; text-decoration:none;">
+                <span class="add-text">追加</span>
+                <img src="/images/icons/add.svg" alt="追加">
+            </a>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <button class="sidebar-close" onclick="toggleSidebar()" aria-label="メニューを閉じる">
+                    ✕
+                </button>
+            </div>
+            <ul>
+                <li>
+                    <a href="/home" class="home-button">
+                        <img src="/images/icons/home.svg" alt="ホーム" />
+                        <span>ホーム</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/home">
+                        <img src="/images/icons/book.svg" alt="レシピ一覧" />
+                        <span>レシピ一覧</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/recipes/favorites">
+                        <img src="/images/icons/heart.svg" alt="お気に入り">
+                        <span>お気に入り</span>
+                    </a>
+                </li>
+                <li>
+                    <img src="/images/icons/category.svg" alt="カテゴリ" />
+                    <span>カテゴリ</span>
+                </li>
+                <li>
+                    <img src="/images/icons/user.svg" alt="ユーザー情報" />
+                    <span>ユーザー情報</span>
+                </li>
+                <li>
+                    <img src="/images/icons/interrogation.svg" alt="ヘルプ" />
+                    <span>ヘルプ</span>
+                </li>
+                <li class="bottom">
+                    <img src="/images/icons/settings.svg" alt="設定" />
+                    <span>設定</span>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="section-title">
+            <h2 th:if="${favoritesPage != null and favoritesPage}" th:text="'お気に入りレシピ一覧'">お気に入り</h2>
+            <h2 th:if="${categoryName != null}" th:text="'カテゴリ：' + ${categoryName}">カテゴリ</h2>
+            <h2 th:if="${favoritesPage == null and categoryName == null}">すべてのレシピ一覧</h2>
+        </div>
+
+        <p th:if="${#lists.isEmpty(recipes)}">レシピが見つかりませんでした。</p>
+        <p id="noResultsMessage" style="display: none;">レシピが見つかりませんでした。</p>
+
+        <!-- レシピカード表示 -->
+        <div class="card-list" th:if="${not #lists.isEmpty(recipes)}">
+            <section class="card" th:each="recipe : ${recipes}" th:attr="data-recipe-id=${recipe.id}">
+                <div class="card-menu">
+                    <button class="menu-toggle" aria-label="メニューを開く">︙</button>
+                    <div class="menu-content">
+                        <form th:action="@{'/recipes/edit/' + ${recipe.id}}" method="get" style="margin:0;">
+                            <button type="submit" class="edit-button">編集</button>
+                        </form>
+                        <button type="button" class="delete-button" th:attr="data-recipe-id=${recipe.id}">削除</button>
+                    </div>
+                </div>
+                <div class="card-image-wrapper">
+                    <img th:if="${recipe.imagePath != null}" th:src="@{${recipe.imagePath}}" alt="レシピ画像" class="card-image" />
+                    <img th:if="${recipe.imagePath == null}" th:src="@{/images/no-image.png}" alt="レシピ画像なし" class="card-no-image" />
+                    <div class="card-overlay">
+                        <h2 th:text="${recipe.title}" class="overlay-title">レシピ名</h2>
+                        <button class="favorite-toggle" th:attr="data-id=${recipe.id}" aria-label="お気に入りに追加">
+                            <img class="heart-image" th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'" alt="お気に入り" />
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                  <span th:each="cat : ${recipe.categories}">
+                    <a th:href="@{'/recipes/category/' + ${cat}}"
+                       th:text="${cat}"
+                       th:classappend="'category-tag ' + ${cat}">
+                      カテゴリ
+                    </a>
+                  </span>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const recipeCards = document.querySelectorAll('.card');
+
+    // 正規化関数（カタカナ→ひらがな、小文字化、全角→半角）
+    function normalizeText(str) {
+      return str
+        .toLowerCase()
+        .normalize("NFKC")
+        .replace(/[ァ-ン]/g, s => String.fromCharCode(s.charCodeAt(0) - 0x60));
+    }
+
+    searchInput.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+
+        const keywordRaw = this.value.trim();
+        const keyword = normalizeText(keywordRaw);
+
+        const noResultsMessage = document.getElementById('noResultsMessage');
+        let visibleCardCount = 0;
+
+        recipeCards.forEach(card => {
+          const titleElement = card.querySelector('h2');
+          const categoryElement = card.querySelector('.category-tag');
+
+          const title = normalizeText(titleElement ? titleElement.textContent : '');
+          const category = normalizeText(categoryElement ? categoryElement.textContent : '');
+
+          const titleMatch = title.includes(keyword);
+          const categoryMatch = category.includes(keyword);
+
+          if (titleMatch || categoryMatch) {
+            card.style.display = '';
+            visibleCardCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        if (visibleCardCount === 0) {
+          noResultsMessage.style.display = 'block';
+        } else {
+          noResultsMessage.style.display = 'none';
+        }
+      }
+    });
+</script>
+
+<script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('active');
+    }
+
+    function checkScreenSize() {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.querySelector('.sidebar-toggle');
+
+      if (window.innerWidth > 768) {
+        // デスクトップサイズの場合、サイドバーを閉じる
+        sidebar.classList.remove('active');
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      const sidebar = document.getElementById('sidebar');
+      const toggleBtn = document.querySelector('.sidebar-toggle');
+      const closeBtn = document.querySelector('.sidebar-close');
+      const sidebarContent = document.querySelector('.sidebar-content');
+
+      // モバイルサイズでのみ外側クリックでサイドバーを閉じる
+      if (window.innerWidth <= 768) {
+        if (!sidebarContent.contains(e.target) &&
+            !toggleBtn.contains(e.target) &&
+            !closeBtn.contains(e.target)) {
+          sidebar.classList.remove('active');
+        }
+      }
+    });
+
+    // ESCキーでサイドバーを閉じる
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar.classList.contains('active')) {
+          sidebar.classList.remove('active');
+        }
+      }
+    });
+
+    // 画面サイズ変更時の処理
+    window.addEventListener('resize', checkScreenSize);
+
+    // 初回読み込み時の処理
+    document.addEventListener('DOMContentLoaded', checkScreenSize);
+</script>
+
+<script>
+    document.addEventListener('click', function(event) {
+      const menuToggles = document.querySelectorAll('.menu-toggle');
+      const menuContents = document.querySelectorAll('.menu-content');
+
+      // メニュートグルがクリックされた場合
+      if (event.target.classList.contains('menu-toggle')) {
+        event.stopPropagation();
+
+        // 他のメニューを閉じる
+        menuContents.forEach(menu => {
+          if (menu !== event.target.nextElementSibling) {
+            menu.style.display = 'none';
+          }
+        });
+
+        // クリックされたメニューをトグル
+        const menuContent = event.target.nextElementSibling;
+        if (menuContent.style.display === 'flex') {
+          menuContent.style.display = 'none';
+        } else {
+          menuContent.style.display = 'flex';
+        }
+      } else {
+        // メニュー以外がクリックされた場合は全メニューを閉じる
+        menuContents.forEach(menu => {
+          menu.style.display = 'none';
+        });
+      }
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".favorite-toggle").forEach(button => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+
+        const recipeId = button.getAttribute("data-id");
+        const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        try {
+          const response = await fetch(`/recipes/${recipeId}/toggleFavorite`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              [header]: token
+            },
+            credentials: 'same-origin'
+          });
+
+          if (!response.ok) {
+            throw new Error("お気に入り切り替え失敗 HTTP: " + response.status);
+          }
+
+          const isFavorite = await response.json();
+          const img = button.querySelector("img");
+          img.src = isFavorite ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
+
+        } catch (error) {
+          alert("お気に入りの切り替えに失敗しました");
+          console.error("Toggle Favorite Error:", error);
+        }
+      });
+    });
+  });
+</script>
+
+<script>
+    // 削除ボタンの処理
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".delete-button").forEach(button => {
+            button.addEventListener("click", async (event) => {
+                event.preventDefault();
+
+                if (!confirm("このレシピを削除してもよろしいですか？")) {
+                    return;
+                }
+
+                const recipeId = button.getAttribute("data-recipe-id");
+                const token = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+                const header = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+                try {
+                    const response = await fetch(`/recipes/${recipeId}/delete`, {
+                        method: "DELETE",
+                        headers: {
+                            "Content-Type": "application/json",
+                            [header]: token
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("削除に失敗しました HTTP: " + response.status);
+                    }
+
+                    // 削除成功時、カードをDOMから削除
+                    const cardElement = document.querySelector(`[data-recipe-id="${recipeId}"]`);
+                    if (cardElement) {
+                        cardElement.style.transition = 'opacity 0.3s ease';
+                        cardElement.style.opacity = '0';
+
+                        setTimeout(() => {
+                            cardElement.remove();
+
+                            // カードが0件になった場合のメッセージ表示
+                            const remainingCards = document.querySelectorAll('.card');
+                            if (remainingCards.length === 0) {
+                                const cardList = document.querySelector('.card-list');
+                                if (cardList) {
+                                    cardList.style.display = 'none';
+                                }
+
+                                const existingNoRecipeMessage = document.querySelector('p:not(#noResultsMessage)');
+                                if (!existingNoRecipeMessage || existingNoRecipeMessage.style.display === 'none') {
+                                    const noRecipeMessage = document.createElement('p');
+                                    noRecipeMessage.textContent = 'レシピが見つかりませんでした。';
+                                    document.querySelector('.main-content').appendChild(noRecipeMessage);
+                                }
+                            }
+                        }, 300);
+                    }
+
+                } catch (error) {
+                    alert("レシピの削除に失敗しました");
+                    console.error("Delete Recipe Error:", error);
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+    window.addEventListener('load', () => {
+      const loader = document.getElementById('loading');
+      const url = new URL(window.location.href);
+      const hasLoadingParam = url.searchParams.get('loading') === 'true';
+
+      if (hasLoadingParam) {
+        if (loader) {
+          loader.style.display = 'flex';
+
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 1500);
+
+          // loading=true を削除（履歴は残すが画面はリロードしない）
+          url.searchParams.delete('loading');
+          window.history.replaceState({}, document.title, url.toString());
+        }
+      } else {
+        if (loader) {
+          loader.remove(); // 二度目以降はDOMごと削除（ちらつき防止）
+        }
+      }
+    });
+</script>
+
+</body>
+</html>

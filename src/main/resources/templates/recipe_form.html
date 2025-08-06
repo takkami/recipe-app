@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${recipe.id} != null ? 'レシピ編集' : 'レシピ追加'">レシピ追加</title>
+    <link rel="stylesheet" href="/assets/css/sanitize.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body class="page-add">
+<div class="container">
+    <header class="top-navbar">
+        <div class="title">RecipeApp</div>
+        <a href="/home" class="add-button">戻る</a>
+    </header>
+
+    <nav class="sidebar">
+        <ul>
+            <li><a href="/home" class="home-button"><img src="/images/icons/home.svg" alt="ホーム" /><span>ホーム</span></a></li>
+            <li><img src="/images/icons/book.svg" alt="レシピ一覧" /><span>レシピ一覧</span></li>
+            <li><a href="/recipes/favorites"><img src="/images/icons/heart.svg" alt="お気に入り"><span>お気に入り</span></a></li>
+            <li><img src="/images/icons/category.svg" alt="カテゴリ" /><span>カテゴリ</span></li>
+            <li><img src="/images/icons/user.svg" alt="ユーザー情報" /><span>ユーザー情報</span></li>
+            <li><img src="/images/icons/interrogation.svg" alt="ヘルプ" /><span>ヘルプ</span></li>
+            <li class="bottom"><img src="/images/icons/settings.svg" alt="設定" /><span>設定</span></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="form-container">
+            <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" method="post" enctype="multipart/form-data">
+                <!-- ID（編集時のみ） -->
+                <input type="hidden" th:if="${recipe.id}" th:name="id" th:value="${recipe.id}" />
+
+                <!-- お気に入りハート -->
+                <button type="button" class="favorite-toggle" onclick="toggleFavorite(this)">
+                    <img id="favorite-icon"
+                         th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'"
+                         th:classappend="${recipe.favorite} ? ' selected' : ''"
+                         alt="お気に入り"
+                         class="heart-image">
+                </button>
+                <input type="hidden" th:name="favorite" th:value="${recipe.favorite}" id="favorite-input" />
+
+                <h1 th:text="${recipe.id} != null ? 'レシピを編集' : 'レシピを追加'">レシピを追加</h1>
+
+                <div class="form-group">
+                    <label for="title">タイトル</label>
+                    <input type="text" id="title" th:name="title" th:value="${recipe.title}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="image">レシピ画像</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
+                        📷 画像を選択
+                    </div>
+                    <div class="error-message" id="image-error"></div>
+
+                    <!-- 現在の画像表示 -->
+                    <div th:if="${recipe.imagePath}" class="image-preview-container">
+                        <span class="current-image-label">現在の画像:</span>
+                        <img th:src="@{${recipe.imagePath}}" alt="現在の画像" class="image-preview" id="current-image" />
+                    </div>
+
+                    <!-- 新しい画像のプレビュー -->
+                    <div class="image-preview-container" id="preview-container" style="display: none;">
+                        <span class="current-image-label">選択した画像:</span>
+                        <img id="image-preview" class="image-preview" alt="画像プレビュー" />
+                        <button type="button" class="image-remove" onclick="removeImagePreview()">×</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ingredients">材料</label>
+                    <textarea id="ingredients" th:name="ingredients" th:text="${recipe.ingredients}"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="instructions">作り方</label>
+                    <textarea id="instructions" th:name="instructions" th:text="${recipe.instructions}"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="reference">参考動画・サイト（URL）</label>
+                    <input type="url" id="reference" th:name="reference" th:value="${recipe.reference}" placeholder="https://example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="category-select">カテゴリ（複数選択可）</label>
+                    <div class="category-selector">
+                        <div class="custom-select">
+                            <div class="select-trigger" onclick="toggleDropdown()">
+                                <span id="selected-categories">カテゴリを選択してください</span>
+                                <span class="arrow">▼</span>
+                            </div>
+                            <div class="select-options" id="category-options">
+                                <label class="option"><input type="checkbox" name="categories" value="和食" th:checked="${recipe.categories != null and recipe.categories.contains('和食')}"> 和食</label>
+                                <label class="option"><input type="checkbox" name="categories" value="洋食" th:checked="${recipe.categories != null and recipe.categories.contains('洋食')}"> 洋食</label>
+                                <label class="option"><input type="checkbox" name="categories" value="中華" th:checked="${recipe.categories != null and recipe.categories.contains('中華')}"> 中華</label>
+                                <label class="option"><input type="checkbox" name="categories" value="麺類" th:checked="${recipe.categories != null and recipe.categories.contains('麺類')}"> 麺類</label>
+                                <label class="option"><input type="checkbox" name="categories" value="スープ" th:checked="${recipe.categories != null and recipe.categories.contains('スープ')}"> スープ</label>
+                                <label class="option"><input type="checkbox" name="categories" value="サラダ" th:checked="${recipe.categories != null and recipe.categories.contains('サラダ')}"> サラダ</label>
+                                <label class="option"><input type="checkbox" name="categories" value="おつまみ" th:checked="${recipe.categories != null and recipe.categories.contains('おつまみ')}"> おつまみ</label>
+                                <label class="option"><input type="checkbox" name="categories" value="デザート" th:checked="${recipe.categories != null and recipe.categories.contains('デザート')}"> デザート</label>
+                                <label class="option"><input type="checkbox" name="categories" value="時短" th:checked="${recipe.categories != null and recipe.categories.contains('時短')}"> 時短</label>
+                                <label class="option"><input type="checkbox" name="categories" value="ヘルシー" th:checked="${recipe.categories != null and recipe.categories.contains('ヘルシー')}"> ヘルシー</label>
+                                <label class="option"><input type="checkbox" name="categories" value="その他" th:checked="${recipe.categories != null and recipe.categories.contains('その他')}"> その他</label>
+                            </div>
+                        </div>
+                        <div class="selected-tags" id="selected-tags"></div>
+                    </div>
+                </div>
+
+                <div class="button-wrapper">
+                    <button type="submit" class="submit-button" th:text="${recipe.id} != null ? '更新' : '登録'">登録</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+<script>
+    function toggleFavorite(button) {
+      const icon = document.getElementById('favorite-icon');
+      const input = document.getElementById('favorite-input');
+      const isSelected = icon.classList.toggle('selected');
+      input.value = isSelected ? "true" : "false";
+      icon.src = isSelected ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
+    }
+
+    // カテゴリセレクターの機能
+    function toggleDropdown() {
+      const options = document.getElementById('category-options');
+      options.style.display = options.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function updateSelectedCategories() {
+      const checkboxes = document.querySelectorAll('input[name="categories"]:checked');
+      const selectedText = document.getElementById('selected-categories');
+      const selectedTags = document.getElementById('selected-tags');
+
+      if (checkboxes.length === 0) {
+        selectedText.textContent = 'カテゴリを選択してください';
+        selectedTags.innerHTML = '';
+      } else {
+        selectedText.textContent = `${checkboxes.length}個のカテゴリを選択中`;
+        selectedTags.innerHTML = '';
+
+        checkboxes.forEach(checkbox => {
+          const tag = document.createElement('span');
+          tag.className = `category-tag ${checkbox.value}`;
+          tag.textContent = checkbox.value;
+
+          const removeBtn = document.createElement('span');
+          removeBtn.className = 'remove-tag';
+          removeBtn.textContent = '×';
+          removeBtn.onclick = () => {
+            checkbox.checked = false;
+            updateSelectedCategories();
+          };
+
+          tag.appendChild(removeBtn);
+          selectedTags.appendChild(tag);
+        });
+      }
+    }
+
+    // ページロード時とチェックボックス変更時の処理
+    document.addEventListener("DOMContentLoaded", () => {
+      const icon = document.getElementById("favorite-icon");
+      const input = document.getElementById("favorite-input");
+      if (icon && input) {
+        icon.src = input.value === "true"
+          ? "/images/icons/heart_active.svg"
+          : "/images/icons/heart_off.svg";
+        if (input.value === "true") {
+          icon.classList.add("selected");
+        }
+      }
+
+      // カテゴリチェックボックスのイベントリスナー
+      const categoryCheckboxes = document.querySelectorAll('input[name="categories"]');
+      categoryCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCategories);
+      });
+
+      // 初期状態の表示更新
+      updateSelectedCategories();
+
+      // ドロップダウン外クリックで閉じる
+      document.addEventListener('click', (e) => {
+        const categorySelector = document.querySelector('.category-selector');
+        if (!categorySelector.contains(e.target)) {
+          document.getElementById('category-options').style.display = 'none';
+        }
+      });
+    });
+</script>
+</html>
