@@ -100,7 +100,9 @@ public class RecipeController {
                                @RequestParam(name = "favorite", defaultValue = "false") boolean favorite,
                                @RequestParam(required = false) String reference,
                                @RequestParam(value = "categories", required = false) List<String> categories,
-                               @RequestParam("image") MultipartFile imageFile) throws IOException {
+                               @RequestParam("image") MultipartFile imageFile,
+                               @RequestParam(name = "deleteCurrentImage", defaultValue = "false") boolean deleteCurrentImage
+    ) throws IOException {
 
         Recipe existingRecipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid recipe ID: " + id));
@@ -111,21 +113,37 @@ public class RecipeController {
         existingRecipe.setFavorite(favorite);
         existingRecipe.setReference(reference);
 
-        // カテゴリの処理：nullチェックを追加
+        // カテゴリの処理
         if (categories != null && !categories.isEmpty()) {
             existingRecipe.setCategories(new HashSet<>(categories));
         } else {
             existingRecipe.setCategories(new HashSet<>());
         }
 
+        Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+        Files.createDirectories(uploadPath);
+
+        // 画像アップロード or 画像削除
         if (imageFile != null && !imageFile.isEmpty()) {
+            // 古い画像があれば削除
+            if (existingRecipe.getImagePath() != null) {
+                Path oldPath = uploadPath.resolve(Paths.get(existingRecipe.getImagePath()).getFileName());
+                Files.deleteIfExists(oldPath);
+            }
+
+            // 新しい画像を保存
             String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-            Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
-            Files.createDirectories(uploadPath);
             Path filePath = uploadPath.resolve(fileName);
             imageFile.transferTo(filePath.toFile());
 
             existingRecipe.setImagePath("/uploads/" + fileName);
+        } else if (deleteCurrentImage) {
+            // 新しい画像が無く、削除フラグが立っている場合
+            if (existingRecipe.getImagePath() != null) {
+                Path oldPath = uploadPath.resolve(Paths.get(existingRecipe.getImagePath()).getFileName());
+                Files.deleteIfExists(oldPath);
+            }
+            existingRecipe.setImagePath(null);
         }
 
         recipeRepository.save(existingRecipe);

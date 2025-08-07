@@ -27,7 +27,7 @@
 
     <main class="main-content">
         <div class="form-container">
-            <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" method="post" enctype="multipart/form-data">
+            <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" th:object="${recipe}" method="post" enctype="multipart/form-data">
                 <!-- ID（編集時のみ） -->
                 <input type="hidden" th:if="${recipe.id}" th:name="id" th:value="${recipe.id}" />
 
@@ -56,10 +56,12 @@
                     </div>
                     <div class="error-message" id="image-error"></div>
 
-                    <!-- 現在の画像表示 -->
-                    <div th:if="${recipe.imagePath}" class="image-preview-container">
+                    <!-- 編集時の既存画像表示と削除 -->
+                    <div th:if="${recipe.imagePath}" class="image-preview-container" id="current-image-wrapper">
                         <span class="current-image-label">現在の画像:</span>
                         <img th:src="@{${recipe.imagePath}}" alt="現在の画像" class="image-preview" id="current-image" />
+                        <button type="button" class="image-remove" onclick="removeCurrentImage()">×</button>
+                        <input type="hidden" name="deleteCurrentImage" id="deleteCurrentImage" value="false" />
                     </div>
 
                     <!-- 新しい画像のプレビュー -->
@@ -120,6 +122,57 @@
 </div>
 </body>
 <script>
+    // 新しい画像プレビュー処理
+    function handleImagePreview(event) {
+        const file = event.target.files[0];
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('image-preview');
+
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.style.display = 'none';
+            previewImage.src = '';
+        }
+    }
+
+    // 新しく選んだ画像を削除（ファイルインプットをリセット）
+    function removeImagePreview() {
+        const fileInput = document.getElementById('image');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('image-preview');
+
+        const newInput = fileInput.cloneNode(true);
+        newInput.value = '';
+        newInput.addEventListener('change', handleImagePreview);
+        fileInput.parentNode.replaceChild(newInput, fileInput);
+
+        previewImage.src = '';
+        previewContainer.style.display = 'none';
+    }
+
+    // 既存の画像を削除（編集時）
+    function removeCurrentImage() {
+        const currentImage = document.getElementById('current-image');
+        const currentWrapper = document.getElementById('current-image-wrapper');
+        const deleteInput = document.getElementById('deleteCurrentImage');
+
+        currentWrapper.style.display = 'none';
+        deleteInput.value = 'true';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const imageInput = document.getElementById('image');
+        if (imageInput) {
+            imageInput.addEventListener('change', handleImagePreview);
+        }
+    });
+
     function toggleFavorite(button) {
       const icon = document.getElementById('favorite-icon');
       const input = document.getElementById('favorite-input');

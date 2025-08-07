@@ -11,7 +11,6 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
     List<Recipe> findByFavoriteTrue();
 
-    // ⬇️ 安定して動作するカテゴリ検索（完全一致）
     @Query("SELECT r FROM Recipe r WHERE :category MEMBER OF r.categories")
     List<Recipe> findByCategory(@Param("category") String category);
 
