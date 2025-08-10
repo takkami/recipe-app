@@ -188,6 +188,15 @@ a:active {
   margin: 0 16px;
 }
 
+.main-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+  width: 100%;
+}
+
 .search-bar {
   position: relative;
   display: flex;
@@ -197,8 +206,7 @@ a:active {
   padding: 4px 16px;
   border: 2px solid #ccc;
   flex: 1;
-  max-width: 400px;
-  margin: 0 16px;
+  max-width: 600px;
   transition: border-color 0.3s ease;
 }
 
@@ -218,11 +226,16 @@ a:active {
 
 .search-icon img {
   position: absolute;
-  top: 4px;
+  top: 3px;
   right: 8px;
   width: 18px;
   height: 18px;
   opacity: 0.6;
+}
+
+.add-button-container {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .add-button {
@@ -234,24 +247,61 @@ a:active {
   border-radius: 12px;
   color: white !important;
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .add-button:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   background-color: #588640;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(106, 153, 78, 0.6);
 }
 
 .add-button img {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   filter: brightness(0) invert(1);
 }
 
 .add-text {
   display: inline;
+}
+
+/* ヘッダー右側のレイアウト */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-info {
+  font-size: 0.9rem;
+  color: #1f2d3d;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #1f2d3d;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* サイドバー */
@@ -336,16 +386,23 @@ a:active {
 
 /* メインコンテンツ */
 .main-content {
-  margin-top: 80px;
+  margin-top: 60px;
   margin-left: 220px;
   padding: 20px 40px 32px 40px;
   background-color: #fffbe6;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 24px;
   box-sizing: border-box;
   min-height: calc(100vh - 80px);
+}
+
+/* セクションヘッダー（タイトルと追加ボタン） */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
 .section-title h2 {
@@ -550,6 +607,75 @@ a:active {
 .category-tag.ヘルシー { background-color: #76D7C4; }
 .category-tag.その他 { background-color: #AAB7B8; }
 
+/* カテゴリ制限メッセージのスタイル */
+.category-limit-message {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.category-limit-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+
+/* 無効化されたオプションのスタイル */
+.select-options .option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.select-options .option input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+/* フラッシュメッセージのスタイル */
+.flash-message {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  animation: slideDown 0.3s ease-out;
+}
+
+.warning-message {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* カードメニュー */
 .card-menu {
   position: absolute;
@@ -661,7 +787,7 @@ a:active {
   border-radius: 12px;
   width: 100%;
   max-width: 90%;
-  margin: 40px auto 0;
+  margin: 0 auto;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
   box-sizing: border-box;
   overflow: visible;
@@ -680,6 +806,13 @@ a:active {
   font-size: 24px;
   margin-bottom: 24px;
   color: #1f2d3d;
+}
+
+/* page-addページ用のタイトルスタイル */
+.page-add .section-title h1 {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0;
 }
 
 .form-group {
@@ -727,6 +860,107 @@ a:active {
   background-color: #588640;
 }
 
+/* ログイン・登録ページ共通スタイル */
+.page-login, .page-register {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-login .form-container,
+.page-register .form-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 90%;
+}
+
+.login-header, .register-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.login-header h1, .register-header h1 {
+  color: #667eea;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.login-header p, .register-header p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.login-form, .register-form {
+  margin-bottom: 1.5rem;
+}
+
+.login-footer, .register-footer {
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.login-footer a, .register-footer a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover, .register-footer a:hover {
+  text-decoration: underline;
+}
+
+/* メッセージスタイル */
+.success-message {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #c3e6cb;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+/* サイドバーのログアウトボタン */
+.logout-sidebar-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.logout-sidebar-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.logout-sidebar-btn img {
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+}
+
 /* レスポンシブデザイン */
 
 /* タブレット（768px以下） */
@@ -744,17 +978,17 @@ a:active {
     margin: 0 8px;
   }
 
-  .search-bar {
-    max-width: 200px;
-    margin: 0 8px;
+  .header-right {
+    gap: 8px;
   }
 
-  .add-button {
-    padding: 8px 12px;
+  .user-info {
+    display: none; /* モバイルではナビバーのユーザー情報を非表示 */
   }
 
-  .add-text {
-    display: none;
+  .logout-btn {
+    padding: 6px 12px;
+    font-size: 12px;
   }
 
   /* サイドバーをモバイル対応に */
@@ -785,14 +1019,58 @@ a:active {
     margin-top: 80px;
   }
 
+  /* ツールバーのレイアウトを調整 */
+  .main-toolbar {
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .search-bar {
+    max-width: 400px;
+    flex: 1;
+  }
+
+  /* セクションヘッダーを縦並びに */
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .add-button-container {
+    align-self: flex-end;
+  }
+
+  .add-text {
+    display: none;
+  }
+
   /* カードリスト調整 */
   .card-list {
+    gap: 8px;
+  }
+
+  .section-header {
+    gap: 8px;
+  }
+
+  .list {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 16px;
   }
 
   .overlay-title {
     font-size: 16px;
+  }
+
+  .page-login .form-container,
+  .page-register .form-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .login-header h1, .register-header h1 {
+    font-size: 1.5rem;
   }
 }
 
@@ -833,23 +1111,13 @@ a:active {
     margin: 0 6px;
   }
 
-  .search-bar {
-    max-width: 150px;
-    margin: 0 6px;
-    padding: 2px 12px;
+  .header-right {
+    gap: 6px;
   }
 
-  .search-bar input {
-    font-size: 12px;
-  }
-
-  .add-button {
-    padding: 6px 10px;
-  }
-
-  .add-button img {
-    width: 16px;
-    height: 16px;
+  .logout-btn {
+    padding: 4px 8px;
+    font-size: 11px;
   }
 
   .sidebar {
@@ -860,6 +1128,35 @@ a:active {
   .main-content {
     margin-top: 72px;
     padding: 16px 12px;
+  }
+
+  .main-toolbar {
+    gap: 8px;
+    margin-bottom: 12px;
+    justify-content: space-between;
+  }
+
+  .search-bar {
+    max-width: none;
+    min-width: 200px;
+    flex: 1;
+  }
+
+  .search-bar input {
+    font-size: 12px;
+  }
+
+  .section-header {
+    gap: 12px;
+  }
+
+  .add-button {
+    padding: 6px 10px;
+  }
+
+  .add-button img {
+    width: 16px;
+    height: 16px;
   }
 
   .card-list {
@@ -887,10 +1184,6 @@ a:active {
 
 /* 極小画面（360px以下） */
 @media (max-width: 360px) {
-  .search-bar {
-    max-width: 120px;
-  }
-
   .title {
     font-size: 16px;
   }
@@ -899,7 +1192,19 @@ a:active {
     padding: 12px 8px;
   }
 
+  .main-toolbar {
+    gap: 6px;
+  }
+
+  .search-bar {
+    min-width: 150px;
+  }
+
   .card-list {
+      gap: 8px;
+    }
+
+  .section-header {
     gap: 8px;
   }
 }

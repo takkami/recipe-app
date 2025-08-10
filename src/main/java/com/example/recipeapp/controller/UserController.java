@@ -1,4 +1,3 @@
-/*
 package com.example.recipeapp.controller;
 
 import com.example.recipeapp.model.User;
@@ -26,13 +25,21 @@ public class UserController {
 
     @PostMapping("/register")
     public String registerUser(@ModelAttribute User user) {
+        // 既存ユーザー名のチェック
+        if (userRepository.findByUsername(user.getUsername()) != null) {
+            return "redirect:/register?error=username_exists";
+        }
+
         // パスワードをハッシュ化して保存
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("ROLE_USER"); // 権限の設定（デフォルトで一般ユーザー）
+        user.setRole("ROLE_USER");
 
         userRepository.save(user);
-        return "redirect:/login";
+        return "redirect:/login?registered=true";
+    }
+
+    @GetMapping("/login")
+    public String showLoginForm() {
+        return "login";
     }
 }
-
-*/

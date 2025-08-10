@@ -1,38 +1,52 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>ログイン</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+    <meta charset="UTF-8">
+    <title>ログイン - RecipeApp</title>
+    <link rel="stylesheet" href="/assets/css/sanitize.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body>
+<body class="page-login">
 <div class="form-container">
-  <h1>ログイン</h1>
-
-  <!-- ログアウト後のメッセージ -->
-  <p th:if="${param.logout}" style="color: green;">ログアウトしました。</p>
-  <!-- エラー表示 -->
-  <p th:if="${param.error}" style="color: red;">ユーザー名またはパスワードが間違っています。</p>
-
-  <form th:action="@{/login}" method="post">
-    <div class="form-group">
-      <label for="username">ユーザー名</label>
-      <input type="text" id="username" name="username" required>
+    <div class="login-header">
+        <h1>RecipeApp</h1>
+        <p>ログイン</p>
     </div>
 
-    <div class="form-group">
-      <label for="password">パスワード</label>
-      <input type="password" id="password" name="password" required>
+    <!-- 登録完了メッセージ -->
+    <div th:if="${param.registered}" class="success-message">
+        ユーザー登録が完了しました。ログインしてください。
     </div>
 
-    <div class="button-wrapper">
-      <button type="submit" class="submit-button">ログイン</button>
+    <!-- ログアウト後のメッセージ -->
+    <div th:if="${param.logout}" class="success-message">
+        ログアウトしました。
     </div>
-  </form>
 
-  <p style="text-align: center; margin-top: 16px;">
-    アカウントをお持ちでない方は <a href="/register">新規登録</a>
-  </p>
+    <!-- エラー表示 -->
+    <div th:if="${param.error}" class="error-message">
+        ユーザー名またはパスワードが間違っています。
+    </div>
+
+    <form th:action="@{/login}" method="post" class="login-form">
+        <div class="form-group">
+            <label for="username">ユーザー名</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">パスワード</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <div class="button-wrapper">
+            <button type="submit" class="submit-button">ログイン</button>
+        </div>
+    </form>
+
+    <div class="login-footer">
+        <p>アカウントをお持ちでない方は <a href="/register">新規登録</a></p>
+    </div>
 </div>
 </body>
 </html>

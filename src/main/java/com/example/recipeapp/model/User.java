@@ -1,4 +1,3 @@
-/*
 package com.example.recipeapp.model;
 
 import jakarta.persistence.*;
@@ -6,15 +5,19 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name = "users")  // ここを追加して user ではなく users テーブルとして扱う
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String username;
+
+    @Column(nullable = false)
     private String password;
-    private String role;
+
+    @Column(nullable = false)
+    private String role = "ROLE_USER";
 }
-*/

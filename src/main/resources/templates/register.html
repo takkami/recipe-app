@@ -1,33 +1,46 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>ユーザー登録</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
+    <meta charset="UTF-8">
+    <title>新規登録 - RecipeApp</title>
+    <link rel="stylesheet" href="/assets/css/sanitize.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
 </head>
-<body>
+<body class="page-register">
 <div class="form-container">
-  <h1>ユーザー登録</h1>
-
-  <form th:action="@{/register}" th:object="${user}" method="post">
-    <div class="form-group">
-      <label for="username">ユーザー名</label>
-      <input type="text" th:field="*{username}" required>
+    <div class="register-header">
+        <h1>RecipeApp</h1>
+        <p>新規登録</p>
     </div>
 
-    <div class="form-group">
-      <label for="password">パスワード</label>
-      <input type="password" th:field="*{password}" required>
+    <!-- エラー表示 -->
+    <div th:if="${param.error == 'username_exists'}" class="error-message">
+        そのユーザー名は既に使用されています。
     </div>
 
-    <div class="button-wrapper">
-      <button type="submit" class="submit-button">登録</button>
-    </div>
-  </form>
+    <form th:action="@{/register}" th:object="${user}" method="post" class="register-form">
+        <div class="form-group">
+            <label for="username">ユーザー名</label>
+            <input type="text" th:field="*{username}" id="username" required
+                   minlength="3" maxlength="20"
+                   placeholder="3〜20文字で入力してください">
+        </div>
 
-  <p style="text-align: center; margin-top: 16px;">
-    登録済みの方は <a href="/login">ログイン</a>
-  </p>
+        <div class="form-group">
+            <label for="password">パスワード</label>
+            <input type="password" th:field="*{password}" id="password" required
+                   minlength="6" maxlength="100"
+                   placeholder="6文字以上で入力してください">
+        </div>
+
+        <div class="button-wrapper">
+            <button type="submit" class="submit-button">登録</button>
+        </div>
+    </form>
+
+    <div class="register-footer">
+        <p>登録済みの方は <a href="/login">ログイン</a></p>
+    </div>
 </div>
 </body>
 </html>

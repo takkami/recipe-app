@@ -1,4 +1,3 @@
-/*
 package com.example.recipeapp.service;
 
 import com.example.recipeapp.model.User;
@@ -16,7 +15,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
-    // Spring Security がログイン時に呼び出すメソッド
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username);
@@ -28,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                Collections.singleton(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+                Collections.singleton(new SimpleGrantedAuthority(user.getRole()))
         );
     }
-}*/
+}

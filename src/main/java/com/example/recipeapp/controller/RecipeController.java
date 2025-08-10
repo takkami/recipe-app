@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -23,6 +26,8 @@ import java.util.NoSuchElementException;
 
 @Controller
 public class RecipeController {
+
+    private static final int MAX_CATEGORIES = 4;
 
     @Autowired
     private RecipeRepository recipeRepository;
@@ -41,6 +46,34 @@ public class RecipeController {
         return "recipe_form";
     }
 
+    // カテゴリ数をバリデーションするヘルパーメソッド
+    private Set<String> validateAndProcessCategories(List<String> categories, RedirectAttributes redirectAttributes) {
+        if (categories == null || categories.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        // 重複を除去し、空文字列を除外
+        Set<String> uniqueCategories = categories.stream()
+                .filter(cat -> cat != null && !cat.trim().isEmpty())
+                .collect(Collectors.toSet());
+
+        // カテゴリ数の制限チェック
+        if (uniqueCategories.size() > MAX_CATEGORIES) {
+            System.out.println("カテゴリ数制限エラー: " + uniqueCategories.size() + " > " + MAX_CATEGORIES);
+            // 制限を超えた場合は最初の4つのみを使用
+            uniqueCategories = uniqueCategories.stream()
+                    .limit(MAX_CATEGORIES)
+                    .collect(Collectors.toSet());
+
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("warningMessage",
+                        "カテゴリの選択は" + MAX_CATEGORIES + "つまでです。最初の" + MAX_CATEGORIES + "つのみが保存されました。");
+            }
+        }
+
+        return uniqueCategories;
+    }
+
     // レシピを新規登録
     @PostMapping("/recipes/new")
     public String submitRecipe(@RequestParam String title,
@@ -49,20 +82,21 @@ public class RecipeController {
                                @RequestParam(name = "favorite", defaultValue = "false") boolean favorite,
                                @RequestParam(required = false) String reference,
                                @RequestParam(value = "categories", required = false) List<String> categories,
-                               @RequestParam("image") MultipartFile imageFile) throws IOException {
+                               @RequestParam("image") MultipartFile imageFile,
+                               RedirectAttributes redirectAttributes) throws IOException {
 
-        System.out.println("カテゴリ: " + categories);
+        System.out.println("受信したカテゴリ: " + categories);
+        System.out.println("カテゴリ数: " + (categories != null ? categories.size() : 0));
+
         Recipe recipe = new Recipe();
         recipe.setTitle(title);
         recipe.setIngredients(ingredients);
         recipe.setInstructions(instructions);
 
-        // カテゴリの処理：nullチェックを追加
-        if (categories != null && !categories.isEmpty()) {
-            recipe.setCategories(new HashSet<>(categories));
-        } else {
-            recipe.setCategories(new HashSet<>());
-        }
+        // カテゴリの処理（バリデーション付き）
+        Set<String> validatedCategories = validateAndProcessCategories(categories, redirectAttributes);
+        recipe.setCategories(validatedCategories);
+        System.out.println("設定されたカテゴリ: " + validatedCategories);
 
         recipe.setFavorite(favorite);
         recipe.setReference(reference);
@@ -78,7 +112,17 @@ public class RecipeController {
             recipe.setImagePath("/uploads/" + fileName); // HTMLで表示する相対パス
         }
 
-        recipeRepository.save(recipe);
+        try {
+            Recipe savedRecipe = recipeRepository.save(recipe);
+            System.out.println("保存されたレシピID: " + savedRecipe.getId());
+            System.out.println("保存されたカテゴリ: " + savedRecipe.getCategories());
+        } catch (Exception e) {
+            System.err.println("レシピ保存エラー: " + e.getMessage());
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "レシピの保存に失敗しました。");
+            return "redirect:/recipes/new";
+        }
+
         return "redirect:/home?loading=true";
     }
 
@@ -101,8 +145,12 @@ public class RecipeController {
                                @RequestParam(required = false) String reference,
                                @RequestParam(value = "categories", required = false) List<String> categories,
                                @RequestParam("image") MultipartFile imageFile,
-                               @RequestParam(name = "deleteCurrentImage", defaultValue = "false") boolean deleteCurrentImage
+                               @RequestParam(name = "deleteCurrentImage", defaultValue = "false") boolean deleteCurrentImage,
+                               RedirectAttributes redirectAttributes
     ) throws IOException {
+
+        System.out.println("更新 - 受信したカテゴリ: " + categories);
+        System.out.println("更新 - カテゴリ数: " + (categories != null ? categories.size() : 0));
 
         Recipe existingRecipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid recipe ID: " + id));
@@ -113,12 +161,10 @@ public class RecipeController {
         existingRecipe.setFavorite(favorite);
         existingRecipe.setReference(reference);
 
-        // カテゴリの処理
-        if (categories != null && !categories.isEmpty()) {
-            existingRecipe.setCategories(new HashSet<>(categories));
-        } else {
-            existingRecipe.setCategories(new HashSet<>());
-        }
+        // カテゴリの処理（バリデーション付き）
+        Set<String> validatedCategories = validateAndProcessCategories(categories, redirectAttributes);
+        existingRecipe.setCategories(validatedCategories);
+        System.out.println("更新 - 設定されたカテゴリ: " + validatedCategories);
 
         Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
         Files.createDirectories(uploadPath);
@@ -146,7 +192,17 @@ public class RecipeController {
             existingRecipe.setImagePath(null);
         }
 
-        recipeRepository.save(existingRecipe);
+        try {
+            Recipe savedRecipe = recipeRepository.save(existingRecipe);
+            System.out.println("更新されたレシピID: " + savedRecipe.getId());
+            System.out.println("更新されたカテゴリ: " + savedRecipe.getCategories());
+        } catch (Exception e) {
+            System.err.println("レシピ更新エラー: " + e.getMessage());
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "レシピの更新に失敗しました。");
+            return "redirect:/recipes/edit/" + id;
+        }
+
         return "redirect:/home?loading=true";
     }
 

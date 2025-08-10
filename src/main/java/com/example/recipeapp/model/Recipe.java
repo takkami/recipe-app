@@ -32,11 +32,34 @@ public class Recipe {
     @Column(length = 1000)
     private String reference;
 
-    // カテゴリ
+    // カテゴリ - 修正点: cascade設定とfetch戦略の明示
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "recipe_category", joinColumns = @JoinColumn(name = "recipe_id"))
-    @Column(name = "category")
+    @CollectionTable(
+            name = "recipe_category",
+            joinColumns = @JoinColumn(name = "recipe_id")
+    )
+    @Column(name = "category", length = 50) // カラム長を明示的に設定
     private Set<String> categories = new HashSet<>();
 
     private String imagePath;
+
+    // カテゴリ用のヘルパーメソッド
+    public void addCategory(String category) {
+        if (categories == null) {
+            categories = new HashSet<>();
+        }
+        categories.add(category);
+    }
+
+    public void removeCategory(String category) {
+        if (categories != null) {
+            categories.remove(category);
+        }
+    }
+
+    public void clearCategories() {
+        if (categories != null) {
+            categories.clear();
+        }
+    }
 }
