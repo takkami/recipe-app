@@ -13,17 +13,32 @@
         <p>新規登録</p>
     </div>
 
+    <!-- 成功メッセージ -->
+    <div th:if="${successMessage}" class="success-message">
+        <span th:text="${successMessage}"></span>
+    </div>
+
     <!-- エラー表示 -->
+    <div th:if="${errorMessage}" class="error-message">
+        <span th:text="${errorMessage}"></span>
+    </div>
+
+    <!-- 旧式のエラー表示（互換性のため残す） -->
     <div th:if="${param.error == 'username_exists'}" class="error-message">
         そのユーザー名は既に使用されています。
     </div>
 
-    <form th:action="@{/register}" th:object="${user}" method="post" class="register-form">
+    <form th:action="@{/register}" th:object="${user}" method="post" class="register-form" id="register-form">
         <div class="form-group">
             <label for="username">ユーザー名</label>
             <input type="text" th:field="*{username}" id="username" required
                    minlength="3" maxlength="20"
-                   placeholder="3〜20文字で入力してください">
+                   placeholder="3〜20文字で入力してください"
+                   pattern="[a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+"
+                   title="ユーザー名には英数字、ひらがな、カタカナ、漢字、アンダースコアが使用できます">
+            <div class="input-help">
+                <small>使用可能文字: 英数字、ひらがな、カタカナ、漢字、アンダースコア(_)</small>
+            </div>
         </div>
 
         <div class="form-group">
@@ -31,10 +46,21 @@
             <input type="password" th:field="*{password}" id="password" required
                    minlength="6" maxlength="100"
                    placeholder="6文字以上で入力してください">
+            <div class="input-help">
+                <small>パスワードは6文字以上で入力してください</small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="password-confirm">パスワード確認</label>
+            <input type="password" id="password-confirm" required
+                   minlength="6" maxlength="100"
+                   placeholder="パスワードを再入力してください">
+            <div class="password-match-message" id="password-match-message"></div>
         </div>
 
         <div class="button-wrapper">
-            <button type="submit" class="submit-button">登録</button>
+            <button type="submit" class="submit-button" id="submit-btn">登録</button>
         </div>
     </form>
 
@@ -42,5 +68,102 @@
         <p>登録済みの方は <a href="/login">ログイン</a></p>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('register-form');
+        const password = document.getElementById('password');
+        const passwordConfirm = document.getElementById('password-confirm');
+        const matchMessage = document.getElementById('password-match-message');
+        const submitBtn = document.getElementById('submit-btn');
+        const username = document.getElementById('username');
+
+        // パスワード一致チェック
+        function checkPasswordMatch() {
+            if (password.value && passwordConfirm.value) {
+                if (password.value === passwordConfirm.value) {
+                    matchMessage.textContent = '✓ パスワードが一致しています';
+                    matchMessage.className = 'password-match-message success';
+                    matchMessage.style.color = '#28a745';
+                    return true;
+                } else {
+                    matchMessage.textContent = '✗ パスワードが一致しません';
+                    matchMessage.className = 'password-match-message error';
+                    matchMessage.style.color = '#dc3545';
+                    return false;
+                }
+            } else {
+                matchMessage.textContent = '';
+                return false;
+            }
+        }
+
+        // ユーザー名の文字チェック
+        function checkUsername() {
+            const value = username.value.trim();
+            const pattern = /^[a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+$/;
+
+            if (value && !pattern.test(value)) {
+                username.setCustomValidity('使用できない文字が含まれています');
+                return false;
+            } else {
+                username.setCustomValidity('');
+                return true;
+            }
+        }
+
+        // リアルタイムバリデーション
+        password.addEventListener('input', checkPasswordMatch);
+        passwordConfirm.addEventListener('input', checkPasswordMatch);
+        username.addEventListener('input', checkUsername);
+
+        // フォーム送信前のバリデーション
+        form.addEventListener('submit', function(e) {
+            const isPasswordMatch = checkPasswordMatch();
+            const isUsernameValid = checkUsername();
+
+            if (!isPasswordMatch) {
+                e.preventDefault();
+                alert('パスワードが一致しません。');
+                return false;
+            }
+
+            if (!isUsernameValid) {
+                e.preventDefault();
+                alert('ユーザー名に使用できない文字が含まれています。');
+                return false;
+            }
+
+            if (username.value.trim().length < 3) {
+                e.preventDefault();
+                alert('ユーザー名は3文字以上で入力してください。');
+                return false;
+            }
+
+            if (password.value.length < 6) {
+                e.preventDefault();
+                alert('パスワードは6文字以上で入力してください。');
+                return false;
+            }
+
+            return true;
+        });
+
+        // 成功・エラーメッセージの自動非表示
+        const messages = document.querySelectorAll('.success-message, .error-message');
+        messages.forEach(message => {
+            setTimeout(() => {
+                message.style.opacity = '0';
+                message.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 5000); // 5秒後に非表示
+        });
+    });
+</script>
+
 </body>
 </html>

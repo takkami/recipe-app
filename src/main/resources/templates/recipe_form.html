@@ -38,7 +38,19 @@
         </div>
 
         <div class="form-container">
+            <!-- お気に入りボタンを右上に配置 -->
+            <button type="button" class="favorite-toggle favorite-top-right" onclick="toggleFavorite(this)">
+                <img id="favorite-icon"
+                     th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'"
+                     th:classappend="${recipe.favorite} ? ' selected' : ''"
+                     alt="お気に入り"
+                     class="heart-image">
+            </button>
+
             <!-- フラッシュメッセージ表示 -->
+            <div th:if="${successMessage}" class="flash-message success-message">
+                <span th:text="${successMessage}"></span>
+            </div>
             <div th:if="${warningMessage}" class="flash-message warning-message">
                 <span th:text="${warningMessage}"></span>
             </div>
@@ -46,18 +58,11 @@
                 <span th:text="${errorMessage}"></span>
             </div>
 
-            <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" th:object="${recipe}" method="post" enctype="multipart/form-data">
+            <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" th:object="${recipe}" method="post" enctype="multipart/form-data" id="recipe-form">
                 <!-- ID（編集時のみ） -->
                 <input type="hidden" th:if="${recipe.id}" th:name="id" th:value="${recipe.id}" />
 
-                <!-- お気に入りハート -->
-                <button type="button" class="favorite-toggle" onclick="toggleFavorite(this)">
-                    <img id="favorite-icon"
-                         th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'"
-                         th:classappend="${recipe.favorite} ? ' selected' : ''"
-                         alt="お気に入り"
-                         class="heart-image">
-                </button>
+                <!-- お気に入りの値を保持する隠しフィールド -->
                 <input type="hidden" th:name="favorite" th:value="${recipe.favorite}" id="favorite-input" />
 
                 <div class="form-group">
@@ -71,7 +76,6 @@
                         <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
                         📷 画像を選択
                     </div>
-                    <div class="error-message" id="image-error"></div>
 
                     <!-- 編集時の既存画像表示と削除 -->
                     <div th:if="${recipe.imagePath}" class="image-preview-container" id="current-image-wrapper">
@@ -105,7 +109,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="category-select">カテゴリ（最大4つまで選択可）</label>
+                    <label for="category-select">カテゴリ（最大3つまで選択可）</label>
                     <div class="category-selector">
                         <div class="custom-select">
                             <div class="select-trigger" onclick="toggleDropdown()">
@@ -128,14 +132,14 @@
                         </div>
                         <!-- カテゴリ制限メッセージ -->
                         <div id="category-limit-message" class="category-limit-message" style="display: none;">
-                            カテゴリの選択は4つまでです。
+                            カテゴリの選択は3つまでです。
                         </div>
                         <div class="selected-tags" id="selected-tags"></div>
                     </div>
                 </div>
 
                 <div class="button-wrapper">
-                    <button type="submit" class="submit-button" th:text="${recipe.id} != null ? '更新' : '登録'">登録</button>
+                    <button type="submit" class="submit-button" th:text="${recipe.id} != null ? '更新' : '登録'" id="submit-btn">登録</button>
                 </div>
             </form>
         </div>
@@ -143,8 +147,9 @@
 </div>
 
 <script>
-    // カテゴリ制限の設定
-    const MAX_CATEGORIES = 4;
+    // カテゴリ制限の設定（3つに変更）
+    const MAX_CATEGORIES = 3;
+    let formSubmissionBlocked = false;
 
     // 新しい画像プレビュー処理
     function handleImagePreview(event) {
@@ -190,13 +195,6 @@
         deleteInput.value = 'true';
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const imageInput = document.getElementById('image');
-        if (imageInput) {
-            imageInput.addEventListener('change', handleImagePreview);
-        }
-    });
-
     function toggleFavorite(button) {
         const icon = document.getElementById('favorite-icon');
         const input = document.getElementById('favorite-input');
@@ -211,42 +209,82 @@
         options.style.display = options.style.display === 'block' ? 'none' : 'block';
     }
 
+    // カテゴリ選択状況を更新（強化版）
     function updateSelectedCategories() {
         const checkboxes = document.querySelectorAll('input[name="categories"]:checked');
         const selectedText = document.getElementById('selected-categories');
         const selectedTags = document.getElementById('selected-tags');
         const limitMessage = document.getElementById('category-limit-message');
+        const submitBtn = document.getElementById('submit-btn');
+        const allCheckboxes = document.querySelectorAll('input[name="categories"]');
 
+        // 選択状況の表示更新
         if (checkboxes.length === 0) {
             selectedText.textContent = 'カテゴリを選択してください';
             selectedTags.innerHTML = '';
             limitMessage.style.display = 'none';
+            formSubmissionBlocked = false;
         } else {
             selectedText.textContent = `${checkboxes.length}個のカテゴリを選択中`;
             selectedTags.innerHTML = '';
 
-            // 制限メッセージの表示制御 - ここを修正
-            if (checkboxes.length > MAX_CATEGORIES) {  // > に変更
+            // 制限チェック（厳格化）
+            if (checkboxes.length > MAX_CATEGORIES) {
                 limitMessage.style.display = 'block';
-                limitMessage.textContent = `カテゴリの選択は${MAX_CATEGORIES}つまでです。`;
+                limitMessage.textContent = `カテゴリは${MAX_CATEGORIES}つまでしか選択できません。現在${checkboxes.length}つ選択されています。`;
+                limitMessage.className = 'category-limit-message error';
+                formSubmissionBlocked = true;
+
+                // 送信ボタンを無効化
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.title = 'カテゴリの選択数を減らしてください';
+
                 // 未選択のチェックボックスを無効化
-                const allCheckboxes = document.querySelectorAll('input[name="categories"]');
                 allCheckboxes.forEach(checkbox => {
                     if (!checkbox.checked) {
                         checkbox.disabled = true;
-                        checkbox.parentElement.style.opacity = '0.5';
+                        checkbox.parentElement.classList.add('disabled');
+                    }
+                });
+            } else if (checkboxes.length === MAX_CATEGORIES) {
+                limitMessage.style.display = 'block';
+                limitMessage.textContent = `カテゴリを${MAX_CATEGORIES}つ選択しました（上限）`;
+                limitMessage.className = 'category-limit-message';
+                formSubmissionBlocked = false;
+
+                // 送信ボタンを有効化
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.title = '';
+
+                // 未選択のチェックボックスを無効化
+                allCheckboxes.forEach(checkbox => {
+                    if (!checkbox.checked) {
+                        checkbox.disabled = true;
+                        checkbox.parentElement.classList.add('disabled');
+                    } else {
+                        checkbox.disabled = false;
+                        checkbox.parentElement.classList.remove('disabled');
                     }
                 });
             } else {
                 limitMessage.style.display = 'none';
+                formSubmissionBlocked = false;
+
+                // 送信ボタンを有効化
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.title = '';
+
                 // 全チェックボックスを有効化
-                const allCheckboxes = document.querySelectorAll('input[name="categories"]');
                 allCheckboxes.forEach(checkbox => {
                     checkbox.disabled = false;
-                    checkbox.parentElement.style.opacity = '1';
+                    checkbox.parentElement.classList.remove('disabled');
                 });
             }
 
+            // 選択されたタグの表示
             checkboxes.forEach(checkbox => {
                 const tag = document.createElement('span');
                 tag.className = `category-tag ${checkbox.value}`;
@@ -266,34 +304,34 @@
         }
     }
 
-    // カテゴリチェックボックスのchange処理を修正
+    // カテゴリチェックボックスのchange処理（強化版）
     function handleCategoryChange(event) {
-        const checkbox = event.target;
-
-        // チェック後の状態をカウント
-        const checkedBoxes = document.querySelectorAll('input[name="categories"]:checked');
-
-        // チェックした時に制限を超える場合の処理
-        if (checkbox.checked && checkedBoxes.length > MAX_CATEGORIES) {
-            checkbox.checked = false;  // チェックを取り消す
-            const limitMessage = document.getElementById('category-limit-message');
-            limitMessage.style.display = 'block';
-            limitMessage.textContent = `カテゴリの選択は${MAX_CATEGORIES}つまでです。`;
-            limitMessage.style.color = '#e74c3c';
-
-            // 一定時間後にメッセージの色を戻す
-            setTimeout(() => {
-                limitMessage.style.color = '';
-            }, 2000);
-
-            return;
-        }
-
+        // 即座に状況を更新
         updateSelectedCategories();
     }
 
-    // ページロード時とチェックボックス変更時の処理
+    // フォーム送信前のバリデーション
+    function validateForm(event) {
+        const checkedBoxes = document.querySelectorAll('input[name="categories"]:checked');
+
+        if (checkedBoxes.length > MAX_CATEGORIES) {
+            event.preventDefault();
+            alert(`カテゴリが${checkedBoxes.length}つ選択されているため登録できませんでした。カテゴリは${MAX_CATEGORIES}つまでしか選択できません。`);
+            return false;
+        }
+
+        if (formSubmissionBlocked) {
+            event.preventDefault();
+            alert('カテゴリの選択数が上限を超えています。選択を減らしてください。');
+            return false;
+        }
+
+        return true;
+    }
+
+    // ページロード時の初期化
     document.addEventListener("DOMContentLoaded", () => {
+        // お気に入りアイコンの初期化
         const icon = document.getElementById("favorite-icon");
         const input = document.getElementById("favorite-input");
         if (icon && input) {
@@ -305,11 +343,23 @@
             }
         }
 
-        // カテゴリチェックボックスのイベントリスナー（修正版）
+        // 画像プレビュー機能の初期化
+        const imageInput = document.getElementById('image');
+        if (imageInput) {
+            imageInput.addEventListener('change', handleImagePreview);
+        }
+
+        // カテゴリチェックボックスのイベントリスナー
         const categoryCheckboxes = document.querySelectorAll('input[name="categories"]');
         categoryCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', handleCategoryChange);
         });
+
+        // フォーム送信時のバリデーション
+        const form = document.getElementById('recipe-form');
+        if (form) {
+            form.addEventListener('submit', validateForm);
+        }
 
         // 初期状態の表示更新
         updateSelectedCategories();

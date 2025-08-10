@@ -607,7 +607,7 @@ a:active {
 .category-tag.ヘルシー { background-color: #76D7C4; }
 .category-tag.その他 { background-color: #AAB7B8; }
 
-/* カテゴリ制限メッセージのスタイル */
+/* カテゴリ制限メッセージのスタイル（強化版） */
 .category-limit-message {
   background-color: #fff3cd;
   color: #856404;
@@ -624,12 +624,18 @@ a:active {
   background-color: #f8d7da;
   color: #721c24;
   border-color: #f5c6cb;
+  font-weight: 600;
 }
 
-/* 無効化されたオプションのスタイル */
+/* 無効化されたオプションのスタイル（強化版） */
 .select-options .option.disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  background-color: #f8f9fa;
+}
+
+.select-options .option.disabled:hover {
+  background-color: #f8f9fa;
 }
 
 .select-options .option input[type="checkbox"]:disabled {
@@ -794,6 +800,31 @@ a:active {
   position: relative;
 }
 
+/* お気に入りボタンを右上に配置 */
+.favorite-top-right {
+  position: absolute;
+  top: 1px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.favorite-top-right .heart-image {
+  width: 32px;
+  height: 32px;
+  transition: transform 0.2s ease;
+}
+
+.favorite-top-right:hover .heart-image {
+  transform: scale(1.1);
+}
+
 .form-container input,
 .form-container textarea,
 .form-container select {
@@ -854,10 +885,24 @@ a:active {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .submit-button:hover {
   background-color: #588640;
+}
+
+/* 送信ボタンの無効化スタイル */
+.submit-button:disabled,
+.submit-button[style*="not-allowed"] {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.submit-button:disabled:hover {
+  background-color: #ccc;
+  transform: none;
 }
 
 /* ログイン・登録ページ共通スタイル */
@@ -914,6 +959,31 @@ a:active {
   text-decoration: underline;
 }
 
+/* 入力フィールドのヘルプテキスト */
+.input-help {
+  margin-top: 4px;
+}
+
+.input-help small {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* パスワード確認メッセージ */
+.password-match-message {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.password-match-message.success {
+  color: #28a745;
+}
+
+.password-match-message.error {
+  color: #dc3545;
+}
+
 /* メッセージスタイル */
 .success-message {
   background-color: #d4edda;
@@ -961,6 +1031,84 @@ a:active {
   margin-right: 10px;
 }
 
+/* ファイル入力関連のスタイル（ピンクエラー表示削除） */
+.file-input-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  background-color: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.file-input-wrapper:hover {
+  background-color: #e9ecef;
+  border-color: #6A994E;
+}
+
+.file-input-wrapper input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* エラーメッセージを非表示に */
+#image-error {
+  display: none !important;
+}
+
+/* 画像プレビュー関連 */
+.image-preview-container {
+  position: relative;
+  margin-top: 12px;
+  display: inline-block;
+}
+
+.current-image-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.image-preview {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  display: block;
+}
+
+.image-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-remove:hover {
+  background-color: #c82333;
+}
+
 /* レスポンシブデザイン */
 
 /* タブレット（768px以下） */
@@ -989,6 +1137,17 @@ a:active {
   .logout-btn {
     padding: 6px 12px;
     font-size: 12px;
+  }
+
+  /* フォームコンテナのパディング調整 */
+  .form-container {
+    padding: 32px 24px;
+  }
+
+  /* お気に入りボタンの位置調整 */
+  .favorite-top-right {
+    top: 15px;
+    right: 15px;
   }
 
   /* サイドバーをモバイル対応に */
@@ -1180,6 +1339,17 @@ a:active {
   .form-container h1 {
     font-size: 20px;
   }
+
+  /* お気に入りボタンのさらなる調整 */
+  .favorite-top-right {
+    top: 10px;
+    right: 10px;
+  }
+
+  .favorite-top-right .heart-image {
+    width: 28px;
+    height: 28px;
+  }
 }
 
 /* 極小画面（360px以下） */
@@ -1201,8 +1371,8 @@ a:active {
   }
 
   .card-list {
-      gap: 8px;
-    }
+    gap: 8px;
+  }
 
   .section-header {
     gap: 8px;
