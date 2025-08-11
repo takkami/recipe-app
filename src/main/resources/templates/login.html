@@ -2,9 +2,109 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ログイン - RecipeApp</title>
+    <meta name="description" content="RecipeAppへログイン">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
     <link rel="stylesheet" href="/assets/css/sanitize.css">
     <link rel="stylesheet" href="/assets/css/style.css">
+
+    <!-- Additional styles for login page -->
+    <style>
+        /* RecipeAppタイトルの中央揃え - 最優先 */
+        .page-login .login-header h1,
+        .login-header h1 {
+            text-align: center !important;
+            margin-bottom: 0.5rem !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        .page-login .login-header p,
+        .login-header p {
+            text-align: center !important;
+            margin-top: 0.5rem !important;
+        }
+
+        .form-container {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* フォーカス時のエフェクト改善 */
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+            transition: all 0.3s ease;
+        }
+
+        /* ボタンのホバーエフェクト改善 */
+        .submit-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:active {
+            transform: translateY(0);
+        }
+
+        /* メッセージのアニメーション改善 */
+        .success-message, .error-message {
+            animation: slideInDown 0.4s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* アクセシビリティの改善 */
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* レスポンシブ対応の改善 */
+        @media (max-width: 480px) {
+            .page-login .form-container {
+                margin: 1rem 0.5rem;
+                padding: 1.5rem 1rem;
+            }
+
+            .login-header h1 {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
 </head>
 <body class="page-login">
 <div class="form-container">
@@ -28,19 +128,36 @@
         ユーザー名またはパスワードが間違っています。
     </div>
 
-    <form th:action="@{/login}" method="post" class="login-form">
+    <form th:action="@{/login}" method="post" class="login-form" novalidate>
         <div class="form-group">
             <label for="username">ユーザー名</label>
-            <input type="text" id="username" name="username" required>
+            <input type="text"
+                   id="username"
+                   name="username"
+                   required
+                   autocomplete="username"
+                   placeholder="ユーザー名を入力"
+                   aria-describedby="username-error">
+            <div id="username-error" class="error-text" style="display: none; color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;"></div>
         </div>
 
         <div class="form-group">
             <label for="password">パスワード</label>
-            <input type="password" id="password" name="password" required>
+            <input type="password"
+                   id="password"
+                   name="password"
+                   required
+                   autocomplete="current-password"
+                   placeholder="パスワードを入力"
+                   aria-describedby="password-error">
+            <div id="password-error" class="error-text" style="display: none; color: #dc3545; font-size: 0.875rem; margin-top: 0.25rem;"></div>
         </div>
 
         <div class="button-wrapper">
-            <button type="submit" class="submit-button">ログイン</button>
+            <button type="submit" class="submit-button" id="submit-btn">
+                <span id="submit-text">ログイン</span>
+                <span id="loading-text" style="display: none;">ログイン中...</span>
+            </button>
         </div>
     </form>
 
@@ -48,5 +165,121 @@
         <p>アカウントをお持ちでない方は <a href="/register">新規登録</a></p>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.login-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitText = document.getElementById('submit-text');
+        const loadingText = document.getElementById('loading-text');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameError = document.getElementById('username-error');
+        const passwordError = document.getElementById('password-error');
+
+        // バリデーション関数
+        function validateUsername() {
+            const value = usernameInput.value.trim();
+            if (!value) {
+                showError(usernameError, 'ユーザー名を入力してください');
+                return false;
+            } else if (value.length < 3) {
+                showError(usernameError, 'ユーザー名は3文字以上で入力してください');
+                return false;
+            }
+            hideError(usernameError);
+            return true;
+        }
+
+        function validatePassword() {
+            const value = passwordInput.value;
+            if (!value) {
+                showError(passwordError, 'パスワードを入力してください');
+                return false;
+            } else if (value.length < 6) {
+                showError(passwordError, 'パスワードは6文字以上で入力してください');
+                return false;
+            }
+            hideError(passwordError);
+            return true;
+        }
+
+        function showError(errorElement, message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            errorElement.parentNode.querySelector('input').style.borderColor = '#dc3545';
+        }
+
+        function hideError(errorElement) {
+            errorElement.style.display = 'none';
+            errorElement.parentNode.querySelector('input').style.borderColor = '#ccc';
+        }
+
+        // リアルタイムバリデーション
+        usernameInput.addEventListener('blur', validateUsername);
+        passwordInput.addEventListener('blur', validatePassword);
+
+        // 入力時にエラーをクリア
+        usernameInput.addEventListener('input', function() {
+            if (usernameError.style.display === 'block') {
+                hideError(usernameError);
+            }
+        });
+
+        passwordInput.addEventListener('input', function() {
+            if (passwordError.style.display === 'block') {
+                hideError(passwordError);
+            }
+        });
+
+        // フォーム送信処理
+        form.addEventListener('submit', function(e) {
+            const isUsernameValid = validateUsername();
+            const isPasswordValid = validatePassword();
+
+            if (!isUsernameValid || !isPasswordValid) {
+                e.preventDefault();
+                return false;
+            }
+
+            // 送信中の状態表示
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            loadingText.style.display = 'inline';
+            submitBtn.style.opacity = '0.7';
+
+            return true;
+        });
+
+        // Enterキーでのフォーム送信
+        [usernameInput, passwordInput].forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+        });
+
+        // メッセージの自動非表示（改善版）
+        const messages = document.querySelectorAll('.success-message, .error-message');
+        messages.forEach(message => {
+            setTimeout(() => {
+                message.style.transition = 'all 0.5s ease-out';
+                message.style.opacity = '0';
+                message.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 500);
+            }, 5000);
+        });
+
+        // 初期フォーカス
+        if (usernameInput) {
+            usernameInput.focus();
+        }
+    });
+</script>
 </body>
 </html>

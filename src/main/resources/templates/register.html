@@ -2,9 +2,168 @@
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新規登録 - RecipeApp</title>
+    <meta name="description" content="RecipeAppの新規ユーザー登録">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
     <link rel="stylesheet" href="/assets/css/sanitize.css">
     <link rel="stylesheet" href="/assets/css/style.css">
+
+    <!-- Additional styles for register page -->
+    <style>
+        /* RecipeAppタイトルの中央揃え - 最優先 */
+        .page-register .register-header h1,
+        .register-header h1 {
+            text-align: center !important;
+            margin-bottom: 0.5rem !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        .page-register .register-header p,
+        .register-header p {
+            text-align: center !important;
+            margin-top: 0.5rem !important;
+        }
+
+        .form-container {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* フォーカス時のエフェクト改善 */
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+            transition: all 0.3s ease;
+        }
+
+        /* ボタンのホバーエフェクト改善 */
+        .submit-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+
+        .submit-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* パスワード強度インジケーター */
+        .password-strength {
+            margin-top: 0.5rem;
+            height: 4px;
+            background-color: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .password-strength.weak .password-strength-bar {
+            width: 25%;
+            background-color: #ff4757;
+        }
+
+        .password-strength.fair .password-strength-bar {
+            width: 50%;
+            background-color: #ffa502;
+        }
+
+        .password-strength.good .password-strength-bar {
+            width: 75%;
+            background-color: #2ed573;
+        }
+
+        .password-strength.strong .password-strength-bar {
+            width: 100%;
+            background-color: #1e90ff;
+        }
+
+        /* エラーメッセージのスタイル改善 */
+        .error-text {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            animation: slideInDown 0.3s ease-out;
+        }
+
+        .success-text {
+            display: none;
+            color: #28a745;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            animation: slideInDown 0.3s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 入力ヘルプテキストの改善 */
+        .input-help small {
+            color: #666;
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+
+        /* レスポンシブ対応の改善 */
+        @media (max-width: 480px) {
+            .page-register .form-container {
+                margin: 1rem 0.5rem;
+                padding: 1.5rem 1rem;
+            }
+
+            .register-header h1 {
+                font-size: 1.75rem;
+            }
+
+            .input-help small {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
 </head>
 <body class="page-register">
 <div class="form-container">
@@ -28,39 +187,67 @@
         そのユーザー名は既に使用されています。
     </div>
 
-    <form th:action="@{/register}" th:object="${user}" method="post" class="register-form" id="register-form">
+    <form th:action="@{/register}" th:object="${user}" method="post" class="register-form" id="register-form" novalidate>
         <div class="form-group">
             <label for="username">ユーザー名</label>
-            <input type="text" th:field="*{username}" id="username" required
-                   minlength="3" maxlength="20"
+            <input type="text"
+                   th:field="*{username}"
+                   id="username"
+                   required
+                   minlength="3"
+                   maxlength="20"
+                   autocomplete="username"
                    placeholder="3〜20文字で入力してください"
                    pattern="[a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+"
-                   title="ユーザー名には英数字、ひらがな、カタカナ、漢字、アンダースコアが使用できます">
-            <div class="input-help">
+                   title="ユーザー名には英数字、ひらがな、カタカナ、漢字、アンダースコアが使用できます"
+                   aria-describedby="username-help username-error username-success">
+            <div id="username-error" class="error-text"></div>
+            <div id="username-success" class="success-text"></div>
+            <div class="input-help" id="username-help">
                 <small>使用可能文字: 英数字、ひらがな、カタカナ、漢字、アンダースコア(_)</small>
             </div>
         </div>
 
         <div class="form-group">
             <label for="password">パスワード</label>
-            <input type="password" th:field="*{password}" id="password" required
-                   minlength="6" maxlength="100"
-                   placeholder="6文字以上で入力してください">
-            <div class="input-help">
+            <input type="password"
+                   th:field="*{password}"
+                   id="password"
+                   required
+                   minlength="6"
+                   maxlength="100"
+                   autocomplete="new-password"
+                   placeholder="6文字以上で入力してください"
+                   aria-describedby="password-help password-error password-strength-text">
+            <div id="password-error" class="error-text"></div>
+            <div class="password-strength" id="password-strength">
+                <div class="password-strength-bar"></div>
+            </div>
+            <div class="input-help" id="password-help">
                 <small>パスワードは6文字以上で入力してください</small>
+                <small id="password-strength-text" style="display: block; margin-top: 0.25rem;"></small>
             </div>
         </div>
 
         <div class="form-group">
             <label for="password-confirm">パスワード確認</label>
-            <input type="password" id="password-confirm" required
-                   minlength="6" maxlength="100"
-                   placeholder="パスワードを再入力してください">
-            <div class="password-match-message" id="password-match-message"></div>
+            <input type="password"
+                   id="password-confirm"
+                   required
+                   minlength="6"
+                   maxlength="100"
+                   autocomplete="new-password"
+                   placeholder="パスワードを再入力してください"
+                   aria-describedby="password-confirm-error password-confirm-success">
+            <div id="password-confirm-error" class="error-text"></div>
+            <div id="password-confirm-success" class="success-text"></div>
         </div>
 
         <div class="button-wrapper">
-            <button type="submit" class="submit-button" id="submit-btn">登録</button>
+            <button type="submit" class="submit-button" id="submit-btn" disabled>
+                <span id="submit-text">登録</span>
+                <span id="loading-text" style="display: none;">登録中...</span>
+            </button>
         </div>
     </form>
 
@@ -74,96 +261,233 @@
         const form = document.getElementById('register-form');
         const password = document.getElementById('password');
         const passwordConfirm = document.getElementById('password-confirm');
-        const matchMessage = document.getElementById('password-match-message');
-        const submitBtn = document.getElementById('submit-btn');
         const username = document.getElementById('username');
+        const submitBtn = document.getElementById('submit-btn');
+        const submitText = document.getElementById('submit-text');
+        const loadingText = document.getElementById('loading-text');
 
-        // パスワード一致チェック
-        function checkPasswordMatch() {
-            if (password.value && passwordConfirm.value) {
-                if (password.value === passwordConfirm.value) {
-                    matchMessage.textContent = '✓ パスワードが一致しています';
-                    matchMessage.className = 'password-match-message success';
-                    matchMessage.style.color = '#28a745';
-                    return true;
-                } else {
-                    matchMessage.textContent = '✗ パスワードが一致しません';
-                    matchMessage.className = 'password-match-message error';
-                    matchMessage.style.color = '#dc3545';
-                    return false;
-                }
-            } else {
-                matchMessage.textContent = '';
-                return false;
-            }
-        }
+        // エラー・成功メッセージ要素
+        const usernameError = document.getElementById('username-error');
+        const usernameSuccess = document.getElementById('username-success');
+        const passwordError = document.getElementById('password-error');
+        const passwordConfirmError = document.getElementById('password-confirm-error');
+        const passwordConfirmSuccess = document.getElementById('password-confirm-success');
 
-        // ユーザー名の文字チェック
-        function checkUsername() {
+        // パスワード強度関連
+        const passwordStrength = document.getElementById('password-strength');
+        const passwordStrengthText = document.getElementById('password-strength-text');
+
+        // バリデーション状態
+        let validationState = {
+            username: false,
+            password: false,
+            passwordConfirm: false
+        };
+
+        // ユーザー名バリデーション
+        function validateUsername() {
             const value = username.value.trim();
             const pattern = /^[a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]+$/;
 
-            if (value && !pattern.test(value)) {
-                username.setCustomValidity('使用できない文字が含まれています');
-                return false;
+            if (!value) {
+                showError(usernameError, usernameSuccess, 'ユーザー名を入力してください');
+                validationState.username = false;
+            } else if (value.length < 3) {
+                showError(usernameError, usernameSuccess, 'ユーザー名は3文字以上で入力してください');
+                validationState.username = false;
+            } else if (value.length > 20) {
+                showError(usernameError, usernameSuccess, 'ユーザー名は20文字以下で入力してください');
+                validationState.username = false;
+            } else if (!pattern.test(value)) {
+                showError(usernameError, usernameSuccess, '使用できない文字が含まれています');
+                validationState.username = false;
             } else {
-                username.setCustomValidity('');
-                return true;
+                showSuccess(usernameError, usernameSuccess, '✓ 使用可能なユーザー名です');
+                validationState.username = true;
             }
+
+            updateSubmitButton();
+            return validationState.username;
         }
 
-        // リアルタイムバリデーション
-        password.addEventListener('input', checkPasswordMatch);
-        passwordConfirm.addEventListener('input', checkPasswordMatch);
-        username.addEventListener('input', checkUsername);
+        // パスワード強度チェック
+        function checkPasswordStrength(password) {
+            let score = 0;
+            let feedback = [];
 
-        // フォーム送信前のバリデーション
+            if (password.length >= 8) score++;
+            else feedback.push('8文字以上');
+
+            if (/[a-z]/.test(password)) score++;
+            else feedback.push('小文字');
+
+            if (/[A-Z]/.test(password)) score++;
+            else feedback.push('大文字');
+
+            if (/\d/.test(password)) score++;
+            else feedback.push('数字');
+
+            if (/[^a-zA-Z0-9]/.test(password)) score++;
+            else feedback.push('記号');
+
+            const levels = ['', 'weak', 'fair', 'good', 'strong'];
+            const texts = ['', '弱い', '普通', '良い', '強い'];
+
+            return {
+                score: score,
+                level: levels[score] || 'weak',
+                text: texts[score] || '弱い',
+                feedback: feedback
+            };
+        }
+
+        // パスワードバリデーション
+        function validatePassword() {
+            const value = password.value;
+
+            if (!value) {
+                showError(passwordError, null, 'パスワードを入力してください');
+                passwordStrength.className = 'password-strength';
+                passwordStrengthText.textContent = '';
+                validationState.password = false;
+            } else if (value.length < 6) {
+                showError(passwordError, null, 'パスワードは6文字以上で入力してください');
+                passwordStrength.className = 'password-strength';
+                passwordStrengthText.textContent = '';
+                validationState.password = false;
+            } else {
+                hideError(passwordError);
+                const strength = checkPasswordStrength(value);
+                passwordStrength.className = `password-strength ${strength.level}`;
+
+                let strengthText = `強度: ${strength.text}`;
+                if (strength.feedback.length > 0 && strength.score < 4) {
+                    strengthText += ` (推奨: ${strength.feedback.join('、')}を含める)`;
+                }
+                passwordStrengthText.textContent = strengthText;
+                validationState.password = true;
+            }
+
+            // パスワード確認も再チェック
+            if (passwordConfirm.value) {
+                validatePasswordConfirm();
+            }
+
+            updateSubmitButton();
+            return validationState.password;
+        }
+
+        // パスワード確認バリデーション
+        function validatePasswordConfirm() {
+            const value = passwordConfirm.value;
+            const passwordValue = password.value;
+
+            if (!value) {
+                showError(passwordConfirmError, passwordConfirmSuccess, 'パスワード確認を入力してください');
+                validationState.passwordConfirm = false;
+            } else if (value !== passwordValue) {
+                showError(passwordConfirmError, passwordConfirmSuccess, '✗ パスワードが一致しません');
+                validationState.passwordConfirm = false;
+            } else {
+                showSuccess(passwordConfirmError, passwordConfirmSuccess, '✓ パスワードが一致しています');
+                validationState.passwordConfirm = true;
+            }
+
+            updateSubmitButton();
+            return validationState.passwordConfirm;
+        }
+
+        // エラー表示
+        function showError(errorElement, successElement, message) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            if (successElement) successElement.style.display = 'none';
+            errorElement.parentNode.querySelector('input').style.borderColor = '#dc3545';
+        }
+
+        // 成功表示
+        function showSuccess(errorElement, successElement, message) {
+            if (successElement) {
+                successElement.textContent = message;
+                successElement.style.display = 'block';
+            }
+            errorElement.style.display = 'none';
+            errorElement.parentNode.querySelector('input').style.borderColor = '#28a745';
+        }
+
+        // エラー非表示
+        function hideError(errorElement) {
+            errorElement.style.display = 'none';
+            errorElement.parentNode.querySelector('input').style.borderColor = '#ccc';
+        }
+
+        // 送信ボタンの状態更新
+        function updateSubmitButton() {
+            const allValid = Object.values(validationState).every(state => state);
+            submitBtn.disabled = !allValid;
+        }
+
+        // イベントリスナー設定
+        username.addEventListener('input', function() {
+            clearTimeout(this.validationTimeout);
+            this.validationTimeout = setTimeout(validateUsername, 300);
+        });
+
+        username.addEventListener('blur', validateUsername);
+
+        password.addEventListener('input', function() {
+            clearTimeout(this.validationTimeout);
+            this.validationTimeout = setTimeout(validatePassword, 100);
+        });
+
+        password.addEventListener('blur', validatePassword);
+
+        passwordConfirm.addEventListener('input', function() {
+            clearTimeout(this.validationTimeout);
+            this.validationTimeout = setTimeout(validatePasswordConfirm, 300);
+        });
+
+        passwordConfirm.addEventListener('blur', validatePasswordConfirm);
+
+        // フォーム送信処理
         form.addEventListener('submit', function(e) {
-            const isPasswordMatch = checkPasswordMatch();
-            const isUsernameValid = checkUsername();
+            const isUsernameValid = validateUsername();
+            const isPasswordValid = validatePassword();
+            const isPasswordConfirmValid = validatePasswordConfirm();
 
-            if (!isPasswordMatch) {
+            if (!isUsernameValid || !isPasswordValid || !isPasswordConfirmValid) {
                 e.preventDefault();
-                alert('パスワードが一致しません。');
                 return false;
             }
 
-            if (!isUsernameValid) {
-                e.preventDefault();
-                alert('ユーザー名に使用できない文字が含まれています。');
-                return false;
-            }
-
-            if (username.value.trim().length < 3) {
-                e.preventDefault();
-                alert('ユーザー名は3文字以上で入力してください。');
-                return false;
-            }
-
-            if (password.value.length < 6) {
-                e.preventDefault();
-                alert('パスワードは6文字以上で入力してください。');
-                return false;
-            }
+            // 送信中の状態表示
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            loadingText.style.display = 'inline';
 
             return true;
         });
 
-        // 成功・エラーメッセージの自動非表示
+        // メッセージの自動非表示
         const messages = document.querySelectorAll('.success-message, .error-message');
         messages.forEach(message => {
             setTimeout(() => {
+                message.style.transition = 'all 0.5s ease-out';
                 message.style.opacity = '0';
-                message.style.transform = 'translateY(-10px)';
+                message.style.transform = 'translateY(-20px)';
                 setTimeout(() => {
                     if (message.parentNode) {
                         message.parentNode.removeChild(message);
                     }
-                }, 300);
-            }, 5000); // 5秒後に非表示
+                }, 500);
+            }, 6000);
         });
+
+        // 初期フォーカス
+        if (username) {
+            username.focus();
+        }
     });
 </script>
-
 </body>
 </html>
