@@ -46,7 +46,7 @@ public class RecipeController {
         return "recipe_form";
     }
 
-    // カテゴリ数をバリデーションするヘルパーメソッド（強化版）
+    // カテゴリ数をバリデーションするヘルパーメソッド（修正版）
     private ValidationResult validateCategories(List<String> categories) {
         ValidationResult result = new ValidationResult();
 
@@ -56,10 +56,15 @@ public class RecipeController {
             return result;
         }
 
-        // 重複を除去し、空文字列を除外
+        // 重複を除去し、空文字列とnullを除外（より厳密に）
         Set<String> uniqueCategories = categories.stream()
                 .filter(cat -> cat != null && !cat.trim().isEmpty())
+                .map(String::trim)
                 .collect(Collectors.toSet());
+
+        System.out.println("バリデーション - 受信カテゴリ数: " + (categories != null ? categories.size() : 0));
+        System.out.println("バリデーション - ユニークカテゴリ数: " + uniqueCategories.size());
+        System.out.println("バリデーション - カテゴリ内容: " + uniqueCategories);
 
         // カテゴリ数の制限チェック（厳格）
         if (uniqueCategories.size() > MAX_CATEGORIES) {
@@ -82,7 +87,7 @@ public class RecipeController {
         String errorMessage;
     }
 
-    // レシピを新規登録（強化版）
+    // レシピを新規登録（修正版）
     @PostMapping("/recipes/new")
     public String submitRecipe(@RequestParam String title,
                                @RequestParam String ingredients,
@@ -93,8 +98,14 @@ public class RecipeController {
                                @RequestParam("image") MultipartFile imageFile,
                                RedirectAttributes redirectAttributes) throws IOException {
 
-        System.out.println("受信したカテゴリ: " + categories);
-        System.out.println("カテゴリ数: " + (categories != null ? categories.size() : 0));
+        System.out.println("新規登録 - 受信したカテゴリ: " + categories);
+        System.out.println("新規登録 - カテゴリ数: " + (categories != null ? categories.size() : 0));
+
+        // 入力値の基本バリデーション
+        if (title == null || title.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "タイトルは必須です。");
+            return "redirect:/recipes/new";
+        }
 
         // カテゴリの厳格なバリデーション
         ValidationResult validationResult = validateCategories(categories);
@@ -105,14 +116,14 @@ public class RecipeController {
         }
 
         Recipe recipe = new Recipe();
-        recipe.setTitle(title);
+        recipe.setTitle(title.trim());
         recipe.setIngredients(ingredients);
         recipe.setInstructions(instructions);
         recipe.setCategories(validationResult.categories);
         recipe.setFavorite(favorite);
         recipe.setReference(reference);
 
-        System.out.println("設定されたカテゴリ: " + validationResult.categories);
+        System.out.println("新規登録 - 設定されたカテゴリ: " + validationResult.categories);
 
         // 画像アップロード処理（プロジェクト直下の uploads ディレクトリへ）
         if (imageFile != null && !imageFile.isEmpty()) {
@@ -149,7 +160,7 @@ public class RecipeController {
         return "recipe_form";
     }
 
-    // 編集内容を保存（強化版）
+    // 編集内容を保存（修正版）
     @PostMapping("/recipes/update")
     public String updateRecipe(@RequestParam Long id,
                                @RequestParam String title,
@@ -166,6 +177,12 @@ public class RecipeController {
         System.out.println("更新 - 受信したカテゴリ: " + categories);
         System.out.println("更新 - カテゴリ数: " + (categories != null ? categories.size() : 0));
 
+        // 入力値の基本バリデーション
+        if (title == null || title.trim().isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "タイトルは必須です。");
+            return "redirect:/recipes/edit/" + id;
+        }
+
         // カテゴリの厳格なバリデーション
         ValidationResult validationResult = validateCategories(categories);
         if (!validationResult.isValid) {
@@ -176,7 +193,7 @@ public class RecipeController {
         Recipe existingRecipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid recipe ID: " + id));
 
-        existingRecipe.setTitle(title);
+        existingRecipe.setTitle(title.trim());
         existingRecipe.setIngredients(ingredients);
         existingRecipe.setInstructions(instructions);
         existingRecipe.setFavorite(favorite);
@@ -231,7 +248,19 @@ public class RecipeController {
     public String deleteRecipe(@PathVariable Long id,
                                @RequestParam(required = false) Boolean from,
                                @RequestParam(required = false) String category) {
-        recipeRepository.deleteById(id);
+        try {
+            // 画像ファイルも削除
+            Recipe recipe = recipeRepository.findById(id).orElse(null);
+            if (recipe != null && recipe.getImagePath() != null) {
+                Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+                Path imagePath = uploadPath.resolve(Paths.get(recipe.getImagePath()).getFileName());
+                Files.deleteIfExists(imagePath);
+            }
+
+            recipeRepository.deleteById(id);
+        } catch (Exception e) {
+            System.err.println("レシピ削除エラー: " + e.getMessage());
+        }
 
         if (Boolean.TRUE.equals(from)) {
             return "redirect:/recipes/favorites";
@@ -258,9 +287,18 @@ public class RecipeController {
                 return ResponseEntity.notFound().build();
             }
 
+            // 画像ファイルも削除
+            Recipe recipe = recipeRepository.findById(id).orElse(null);
+            if (recipe != null && recipe.getImagePath() != null) {
+                Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+                Path imagePath = uploadPath.resolve(Paths.get(recipe.getImagePath()).getFileName());
+                Files.deleteIfExists(imagePath);
+            }
+
             recipeRepository.deleteById(id);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
+            System.err.println("AJAX削除エラー: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -293,6 +331,7 @@ public class RecipeController {
             recipeRepository.save(recipe);
             return ResponseEntity.ok(recipe.isFavorite());
         } catch (Exception e) {
+            System.err.println("お気に入りトグルエラー: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

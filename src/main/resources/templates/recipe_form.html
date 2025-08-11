@@ -3,25 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${recipe.id} != null ? 'レシピ編集' : 'レシピ追加'">レシピ追加</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="/assets/css/sanitize.css">
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="page-add">
 <div class="container">
     <header class="top-navbar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="メニューを開く">
+            <span></span>
+        </button>
         <div class="title">RecipeApp</div>
     </header>
 
-    <nav class="sidebar">
-        <ul>
-            <li><a href="/home" class="home-button"><img src="/images/icons/home.svg" alt="ホーム" /><span>ホーム</span></a></li>
-            <li><img src="/images/icons/book.svg" alt="レシピ一覧" /><span>レシピ一覧</span></li>
-            <li><a href="/recipes/favorites"><img src="/images/icons/heart.svg" alt="お気に入り"><span>お気に入り</span></a></li>
-            <li><img src="/images/icons/category.svg" alt="カテゴリ" /><span>カテゴリ</span></li>
-            <li><img src="/images/icons/user.svg" alt="ユーザー情報" /><span>ユーザー情報</span></li>
-            <li><img src="/images/icons/interrogation.svg" alt="ヘルプ" /><span>ヘルプ</span></li>
-            <li class="bottom"><img src="/images/icons/settings.svg" alt="設定" /><span>設定</span></li>
-        </ul>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <button class="sidebar-close" onclick="toggleSidebar()" aria-label="メニューを閉じる">
+                    ✕
+                </button>
+            </div>
+            <ul>
+                <li><a href="/home" class="home-button"><img src="/images/icons/home.svg" alt="ホーム" /><span>ホーム</span></a></li>
+                <li><img src="/images/icons/book.svg" alt="レシピ一覧" /><span>レシピ一覧</span></li>
+                <li><a href="/recipes/favorites"><img src="/images/icons/heart.svg" alt="お気に入り"><span>お気に入り</span></a></li>
+                <li><img src="/images/icons/category.svg" alt="カテゴリ" /><span>カテゴリ</span></li>
+                <li><img src="/images/icons/user.svg" alt="ユーザー情報" /><span>ユーザー情報</span></li>
+                <li><img src="/images/icons/interrogation.svg" alt="ヘルプ" /><span>ヘルプ</span></li>
+                <li class="bottom"><img src="/images/icons/settings.svg" alt="設定" /><span>設定</span></li>
+            </ul>
+        </div>
     </nav>
 
     <main class="main-content">
@@ -38,8 +55,8 @@
         </div>
 
         <div class="form-container">
-            <!-- お気に入りボタンを右上に配置 -->
-            <button type="button" class="favorite-toggle favorite-top-right" onclick="toggleFavorite(this)">
+            <!-- お気に入りボタンを右上に配置（修正版） -->
+            <button type="button" class="favorite-toggle favorite-top-right" onclick="toggleFavorite(this)" aria-label="お気に入りに追加">
                 <img id="favorite-icon"
                      th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'"
                      th:classappend="${recipe.favorite} ? ' selected' : ''"
@@ -66,8 +83,8 @@
                 <input type="hidden" th:name="favorite" th:value="${recipe.favorite}" id="favorite-input" />
 
                 <div class="form-group">
-                    <label for="title">タイトル</label>
-                    <input type="text" id="title" th:name="title" th:value="${recipe.title}" required>
+                    <label for="title">タイトル <span style="color: red;">*</span></label>
+                    <input type="text" id="title" th:name="title" th:value="${recipe.title}" required maxlength="100">
                 </div>
 
                 <div class="form-group">
@@ -95,12 +112,12 @@
 
                 <div class="form-group">
                     <label for="ingredients">材料</label>
-                    <textarea id="ingredients" th:name="ingredients" th:text="${recipe.ingredients}"></textarea>
+                    <textarea id="ingredients" th:name="ingredients" th:text="${recipe.ingredients}" placeholder="例：&#10;・玉ねぎ 1個&#10;・にんじん 1本&#10;・じゃがいも 2個"></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="instructions">作り方</label>
-                    <textarea id="instructions" th:name="instructions" th:text="${recipe.instructions}"></textarea>
+                    <textarea id="instructions" th:name="instructions" th:text="${recipe.instructions}" placeholder="例：&#10;1. 玉ねぎを薄切りにする&#10;2. フライパンで炒める&#10;3. 塩胡椒で味付けする"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -112,7 +129,7 @@
                     <label for="category-select">カテゴリ（最大3つまで選択可）</label>
                     <div class="category-selector">
                         <div class="custom-select">
-                            <div class="select-trigger" onclick="toggleDropdown()">
+                            <div class="select-trigger" onclick="toggleDropdown()" tabindex="0">
                                 <span id="selected-categories">カテゴリを選択してください</span>
                                 <span class="arrow">▼</span>
                             </div>
@@ -147,7 +164,47 @@
 </div>
 
 <script>
-    // カテゴリ制限の設定（3つに変更）
+    // モバイル対応のサイドバー機能
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('active');
+    }
+
+    function checkScreenSize() {
+        const sidebar = document.getElementById('sidebar');
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('active');
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        const closeBtn = document.querySelector('.sidebar-close');
+        const sidebarContent = document.querySelector('.sidebar-content');
+
+        if (window.innerWidth <= 768) {
+            if (!sidebarContent.contains(e.target) &&
+                !toggleBtn.contains(e.target) &&
+                !closeBtn.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        }
+    });
+
+    window.addEventListener('resize', checkScreenSize);
+    document.addEventListener('DOMContentLoaded', checkScreenSize);
+
+    // カテゴリ制限の設定
     const MAX_CATEGORIES = 3;
     let formSubmissionBlocked = false;
 
@@ -158,12 +215,24 @@
         const previewImage = document.getElementById('image-preview');
 
         if (file && file.type.startsWith('image/')) {
+            // ファイルサイズチェック（5MB制限）
+            if (file.size > 5 * 1024 * 1024) {
+                alert('ファイルサイズが大きすぎます。5MB以下の画像を選択してください。');
+                event.target.value = '';
+                previewContainer.style.display = 'none';
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 previewImage.src = e.target.result;
                 previewContainer.style.display = 'block';
             };
             reader.readAsDataURL(file);
+        } else if (file) {
+            alert('画像ファイルを選択してください（JPEG, PNG, GIF, WebP対応）。');
+            event.target.value = '';
+            previewContainer.style.display = 'none';
         } else {
             previewContainer.style.display = 'none';
             previewImage.src = '';
@@ -195,6 +264,7 @@
         deleteInput.value = 'true';
     }
 
+    // お気に入りトグル機能
     function toggleFavorite(button) {
         const icon = document.getElementById('favorite-icon');
         const input = document.getElementById('favorite-input');
@@ -206,10 +276,14 @@
     // カテゴリセレクターの機能
     function toggleDropdown() {
         const options = document.getElementById('category-options');
-        options.style.display = options.style.display === 'block' ? 'none' : 'block';
+        const arrow = document.querySelector('.arrow');
+        const isVisible = options.style.display === 'block';
+
+        options.style.display = isVisible ? 'none' : 'block';
+        arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
     }
 
-    // カテゴリ選択状況を更新（強化版）
+    // カテゴリ選択状況を更新（修正版）
     function updateSelectedCategories() {
         const checkboxes = document.querySelectorAll('input[name="categories"]:checked');
         const selectedText = document.getElementById('selected-categories');
@@ -217,6 +291,9 @@
         const limitMessage = document.getElementById('category-limit-message');
         const submitBtn = document.getElementById('submit-btn');
         const allCheckboxes = document.querySelectorAll('input[name="categories"]');
+
+        console.log('カテゴリ更新 - 選択数:', checkboxes.length);
+        console.log('カテゴリ更新 - 選択内容:', Array.from(checkboxes).map(cb => cb.value));
 
         // 選択状況の表示更新
         if (checkboxes.length === 0) {
@@ -230,13 +307,15 @@
 
             // 制限チェック（厳格化）
             if (checkboxes.length > MAX_CATEGORIES) {
+                console.log('カテゴリ上限エラー:', checkboxes.length, '>', MAX_CATEGORIES);
                 limitMessage.style.display = 'block';
                 limitMessage.textContent = `カテゴリは${MAX_CATEGORIES}つまでしか選択できません。現在${checkboxes.length}つ選択されています。`;
                 limitMessage.className = 'category-limit-message error';
                 formSubmissionBlocked = true;
 
                 // 送信ボタンを無効化
-                submitBtn.style.opacity = '0.5';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
                 submitBtn.style.cursor = 'not-allowed';
                 submitBtn.title = 'カテゴリの選択数を減らしてください';
 
@@ -245,6 +324,9 @@
                     if (!checkbox.checked) {
                         checkbox.disabled = true;
                         checkbox.parentElement.classList.add('disabled');
+                    } else {
+                        checkbox.disabled = false;
+                        checkbox.parentElement.classList.remove('disabled');
                     }
                 });
             } else if (checkboxes.length === MAX_CATEGORIES) {
@@ -254,6 +336,7 @@
                 formSubmissionBlocked = false;
 
                 // 送信ボタンを有効化
+                submitBtn.disabled = false;
                 submitBtn.style.opacity = '1';
                 submitBtn.style.cursor = 'pointer';
                 submitBtn.title = '';
@@ -273,6 +356,7 @@
                 formSubmissionBlocked = false;
 
                 // 送信ボタンを有効化
+                submitBtn.disabled = false;
                 submitBtn.style.opacity = '1';
                 submitBtn.style.cursor = 'pointer';
                 submitBtn.title = '';
@@ -304,28 +388,42 @@
         }
     }
 
-    // カテゴリチェックボックスのchange処理（強化版）
+    // カテゴリチェックボックスのchange処理
     function handleCategoryChange(event) {
-        // 即座に状況を更新
+        console.log('カテゴリ変更:', event.target.value, event.target.checked);
         updateSelectedCategories();
     }
 
-    // フォーム送信前のバリデーション
+    // フォーム送信前のバリデーション（修正版）
     function validateForm(event) {
+        const titleInput = document.getElementById('title');
         const checkedBoxes = document.querySelectorAll('input[name="categories"]:checked');
 
-        if (checkedBoxes.length > MAX_CATEGORIES) {
+        // タイトルの必須チェック
+        if (!titleInput.value.trim()) {
             event.preventDefault();
-            alert(`カテゴリが${checkedBoxes.length}つ選択されているため登録できませんでした。カテゴリは${MAX_CATEGORIES}つまでしか選択できません。`);
+            alert('タイトルは必須です。');
+            titleInput.focus();
             return false;
         }
 
+        // カテゴリ数チェック
+        if (checkedBoxes.length > MAX_CATEGORIES) {
+            event.preventDefault();
+            console.log('フォーム送信阻止 - カテゴリ数:', checkedBoxes.length);
+            alert(`カテゴリが${checkedBoxes.length}つ選択されているため登録できません。カテゴリは${MAX_CATEGORIES}つまでしか選択できません。`);
+            return false;
+        }
+
+        // 送信ブロックフラグチェック
         if (formSubmissionBlocked) {
             event.preventDefault();
             alert('カテゴリの選択数が上限を超えています。選択を減らしてください。');
             return false;
         }
 
+        // 送信前に最終確認
+        console.log('フォーム送信許可 - カテゴリ数:', checkedBoxes.length);
         return true;
     }
 
@@ -367,10 +465,25 @@
         // ドロップダウン外クリックで閉じる
         document.addEventListener('click', (e) => {
             const categorySelector = document.querySelector('.category-selector');
+            const options = document.getElementById('category-options');
+            const arrow = document.querySelector('.arrow');
+
             if (!categorySelector.contains(e.target)) {
-                document.getElementById('category-options').style.display = 'none';
+                options.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
             }
         });
+
+        // Enter キーでドロップダウンをトグル
+        const selectTrigger = document.querySelector('.select-trigger');
+        if (selectTrigger) {
+            selectTrigger.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleDropdown();
+                }
+            });
+        }
 
         // フラッシュメッセージの自動非表示
         const flashMessages = document.querySelectorAll('.flash-message');
@@ -385,6 +498,8 @@
                 }, 300);
             }, 5000); // 5秒後に非表示
         });
+
+        console.log('フォーム初期化完了');
     });
 </script>
 

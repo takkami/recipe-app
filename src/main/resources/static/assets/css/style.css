@@ -754,7 +754,7 @@ a:active {
   background-color: #588640;
 }
 
-/* お気に入りボタン */
+/* お気に入りボタン - ホームページでのカード上配置 */
 .favorite-toggle {
   position: absolute;
   bottom: 8px;
@@ -786,7 +786,7 @@ a:active {
   transform: scale(1.1);
 }
 
-/* フォーム関連（既存のスタイルを維持） */
+/* フォーム関連 */
 .form-container {
   background: #fff;
   padding: 48px;
@@ -800,11 +800,11 @@ a:active {
   position: relative;
 }
 
-/* お気に入りボタンを右上に配置 */
+/* お気に入りボタンを右上に配置（修正版） */
 .favorite-top-right {
   position: absolute;
-  top: 1px;
-  right: 20px;
+  top: 16px;
+  right: 16px;
   background: none;
   border: none;
   cursor: pointer;
@@ -812,12 +812,16 @@ a:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
 
 .favorite-top-right .heart-image {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   transition: transform 0.2s ease;
 }
 
@@ -837,6 +841,7 @@ a:active {
   font-size: 24px;
   margin-bottom: 24px;
   color: #1f2d3d;
+  padding-right: 60px; /* お気に入りボタンとの重複を避ける */
 }
 
 /* page-addページ用のタイトルスタイル */
@@ -865,6 +870,14 @@ a:active {
   font-size: 16px;
   font-family: inherit;
   box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #6A994E;
+  box-shadow: 0 0 0 2px rgba(106, 153, 78, 0.2);
 }
 
 .form-group textarea {
@@ -886,23 +899,32 @@ a:active {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-weight: 600;
 }
 
 .submit-button:hover {
   background-color: #588640;
+  transform: translateY(-1px);
 }
 
 /* 送信ボタンの無効化スタイル */
 .submit-button:disabled,
 .submit-button[style*="not-allowed"] {
-  background-color: #ccc;
-  cursor: not-allowed;
-  opacity: 0.5;
+  background-color: #ccc !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+  transform: none !important;
 }
 
 .submit-button:disabled:hover {
-  background-color: #ccc;
-  transform: none;
+  background-color: #ccc !important;
+  transform: none !important;
+}
+
+.button-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
 }
 
 /* ログイン・登録ページ共通スタイル */
@@ -932,7 +954,7 @@ a:active {
 .login-header h1, .register-header h1 {
   color: #667eea;
   font-size: 2rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0 auto 0.5rem;
 }
 
 .login-header p, .register-header p {
@@ -1031,7 +1053,7 @@ a:active {
   margin-right: 10px;
 }
 
-/* ファイル入力関連のスタイル（ピンクエラー表示削除） */
+/* ファイル入力関連のスタイル */
 .file-input-wrapper {
   position: relative;
   display: inline-block;
@@ -1103,6 +1125,7 @@ a:active {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.2s ease;
 }
 
 .image-remove:hover {
@@ -1144,10 +1167,21 @@ a:active {
     padding: 32px 24px;
   }
 
+  .form-container h1 {
+    padding-right: 50px; /* モバイルでのお気に入りボタンとの重複回避 */
+  }
+
   /* お気に入りボタンの位置調整 */
   .favorite-top-right {
-    top: 15px;
-    right: 15px;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .favorite-top-right .heart-image {
+    width: 32px;
+    height: 32px;
   }
 
   /* サイドバーをモバイル対応に */
@@ -1338,12 +1372,15 @@ a:active {
 
   .form-container h1 {
     font-size: 20px;
+    padding-right: 45px; /* スマホでのお気に入りボタンとの重複回避 */
   }
 
   /* お気に入りボタンのさらなる調整 */
   .favorite-top-right {
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
   }
 
   .favorite-top-right .heart-image {
@@ -1376,5 +1413,21 @@ a:active {
 
   .section-header {
     gap: 8px;
+  }
+
+  .form-container h1 {
+    padding-right: 40px;
+  }
+
+  .favorite-top-right {
+    top: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .favorite-top-right .heart-image {
+    width: 26px;
+    height: 26px;
   }
 }
