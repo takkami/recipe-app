@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title th:text="${recipe.id} != null ? 'レシピ編集' : 'レシピ追加'">レシピ追加</title>
@@ -19,9 +19,21 @@
         <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="メニューを開く">
             <span></span>
         </button>
-        <div class="title">RecipeApp</div>
+        <div class="title">Recipin'</div>
+        <div class="header-right">
+            <!-- ヘッダー右側 -->
+            <div class="user-info" sec:authorize="isAuthenticated()">
+                <span th:text="'ようこそ、' + ${#authentication.name} + 'さん'">ユーザー名</span>
+            </div>
+            <div class="header-actions" sec:authorize="isAuthenticated()">
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <button type="submit" class="logout-btn">ログアウト</button>
+                </form>
+            </div>
+        </div>
     </header>
 
+    <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-content">
             <div class="sidebar-header">
@@ -30,13 +42,56 @@
                 </button>
             </div>
             <ul>
-                <li><a href="/home" class="home-button"><img src="/images/icons/home.svg" alt="ホーム" /><span>ホーム</span></a></li>
-                <li><img src="/images/icons/book.svg" alt="レシピ一覧" /><span>レシピ一覧</span></li>
-                <li><a href="/recipes/favorites"><img src="/images/icons/heart.svg" alt="お気に入り"><span>お気に入り</span></a></li>
-                <li><img src="/images/icons/category.svg" alt="カテゴリ" /><span>カテゴリ</span></li>
-                <li><img src="/images/icons/user.svg" alt="ユーザー情報" /><span>ユーザー情報</span></li>
-                <li><img src="/images/icons/interrogation.svg" alt="ヘルプ" /><span>ヘルプ</span></li>
-                <li class="bottom"><img src="/images/icons/settings.svg" alt="設定" /><span>設定</span></li>
+                <li>
+                    <a href="/home" class="home-button">
+                        <img src="/images/icons/home.svg" alt="ホーム" />
+                        <span>ホーム</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/home">
+                        <img src="/images/icons/book.svg" alt="レシピ一覧" />
+                        <span>レシピ一覧</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/recipes/favorites">
+                        <img src="/images/icons/heart.svg" alt="お気に入り">
+                        <span>お気に入り</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/home">
+                        <img src="/images/icons/category.svg" alt="カテゴリ一覧" />
+                        <span>カテゴリ一覧</span>
+                    </a>
+                </li>
+                <li>
+                    <div class="menu-item" onclick="showUserInfo()">
+                        <img src="/images/icons/user.svg" alt="ユーザー情報" />
+                        <span>ユーザー情報</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="menu-item" onclick="showHelp()">
+                        <img src="/images/icons/interrogation.svg" alt="ヘルプ" />
+                        <span>ヘルプ</span>
+                    </div>
+                </li>
+                <li class="bottom">
+                    <div class="menu-item" onclick="showSettings()">
+                        <img src="/images/icons/settings.svg" alt="設定" />
+                        <span>設定</span>
+                    </div>
+                </li>
+                <li class="bottom" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" style="margin:0;">
+                        <button type="submit" class="logout-sidebar-btn">
+                            <img src="/images/icons/logout.svg" alt="ログアウト" />
+                            <span>ログアウト</span>
+                        </button>
+                    </form>
+                </li>
             </ul>
         </div>
     </nav>
@@ -162,6 +217,219 @@
         </div>
     </main>
 </div>
+
+<script>
+    // フォーム画面用ダークモード対応
+    class FormDarkModeManager {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            // 初期設定の読み込み
+            this.loadSettings();
+            // 設定変更の監視
+            this.watchStorageChanges();
+        }
+
+        loadSettings() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            const compactView = localStorage.getItem('compactView') === 'true';
+
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        watchStorageChanges() {
+            // localStorage の変更を監視
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'darkMode') {
+                    this.loadSettings();
+                }
+            });
+
+            window.addEventListener('darkmodechange', () => {
+                this.loadSettings();
+            });
+        }
+
+        broadcastChange() {
+            window.dispatchEvent(new Event('darkmodechange'));
+        }
+    }
+
+    // 設定関数
+    function toggleDarkMode() {
+        const checkbox = document.getElementById('darkMode');
+        const isDark = checkbox ? checkbox.checked : !document.body.classList.contains('dark-mode');
+
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'false');
+        }
+
+        formDarkModeManager.broadcastChange();
+    }
+
+    function toggleCompactView() {
+        const checkbox = document.getElementById('compactView');
+        const isCompact = checkbox ? checkbox.checked : false;
+
+        localStorage.setItem('compactView', isCompact ? 'true' : 'false');
+    }
+
+    // モーダル表示機能
+    function showModal(title, content) {
+        // 既存のモーダルがあれば削除
+        const existingModal = document.getElementById('formModalOverlay');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // モーダルHTML作成
+        const modalHTML = `
+            <div id="formModalOverlay" class="modal-overlay" style="display: flex;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" onclick="closeFormModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-btn" onclick="closeFormModal()">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+
+        // ESCキーでモーダルを閉じる
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeFormModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+
+        // 外側クリックでモーダルを閉じる
+        document.getElementById('formModalOverlay').addEventListener('click', function(e) {
+            if (e.target.id === 'formModalOverlay') {
+                closeFormModal();
+            }
+        });
+    }
+
+    function closeFormModal() {
+        const modal = document.getElementById('formModalOverlay');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }
+    }
+
+    // 設定表示
+    function showSettings() {
+        const settingsContent = `
+            <div class="settings-content">
+                <h4>⚙️ 設定</h4>
+                <div class="settings-section">
+                    <h5>🎨 表示設定</h5>
+                    <div class="setting-item">
+                        <span>ダークモード</span>
+                        <label class="switch">
+                            <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>コンパクト表示</span>
+                        <label class="switch">
+                            <input type="checkbox" id="compactView" onchange="toggleCompactView()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h5>ℹ️ アプリ情報</h5>
+                    <p><strong>バージョン:</strong> 1.0.0</p>
+                    <p><strong>最終更新:</strong> 2024年</p>
+                </div>
+            </div>
+        `;
+        showModal('設定', settingsContent);
+
+        setTimeout(() => {
+            loadSettingsInModal();
+        }, 100);
+    }
+
+    function loadSettingsInModal() {
+        const darkModeCheckbox = document.getElementById('darkMode');
+        const compactViewCheckbox = document.getElementById('compactView');
+
+        if (darkModeCheckbox) {
+            darkModeCheckbox.checked = localStorage.getItem('darkMode') === 'true';
+        }
+        if (compactViewCheckbox) {
+            compactViewCheckbox.checked = localStorage.getItem('compactView') === 'true';
+        }
+    }
+
+    // ユーザー情報表示
+    function showUserInfo() {
+        const userInfo = `
+            <div class="user-stats">
+                <h4>👤 ユーザー情報</h4>
+                <p><strong>現在のページ:</strong> レシピフォーム</p>
+                <p><strong>登録日:</strong> 2024年</p>
+            </div>
+        `;
+        showModal('ユーザー情報', userInfo);
+    }
+
+    // ヘルプ表示
+    function showHelp() {
+        const helpContent = `
+            <div class="help-content">
+                <h4>📖 RecipeAppの使い方</h4>
+                <div class="help-section">
+                    <h5>🆕 レシピの追加</h5>
+                    <p>フォームに必要な情報を入力してレシピを作成できます。</p>
+                </div>
+                <div class="help-section">
+                    <h5>📝 入力のコツ</h5>
+                    <p>材料と手順は詳しく記入すると、後で見返しやすくなります。</p>
+                </div>
+            </div>
+        `;
+        showModal('ヘルプ', helpContent);
+    }
+
+    // サイドバー機能（フォーム画面用）
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('active');
+        }
+    }
+
+    // 初期化
+    const formDarkModeManager = new FormDarkModeManager();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        formDarkModeManager.loadSettings();
+    });
+</script>
 
 <script>
     // モバイル対応のサイドバー機能

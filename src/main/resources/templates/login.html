@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ログイン - RecipeApp</title>
-    <meta name="description" content="RecipeAppへログイン">
+    <title>ログイン - Recipin'</title>
+    <meta name="description" content="Recipin'へログイン">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,13 +17,14 @@
 
     <!-- Additional styles for login page -->
     <style>
-        /* RecipeAppタイトルの中央揃え - 最優先 */
+        /* Recipin'タイトルの中央揃え - 最優先 */
         .page-login .login-header h1,
         .login-header h1 {
             text-align: center !important;
             margin-bottom: 0.5rem !important;
             padding-left: 0 !important;
             padding-right: 0 !important;
+            font-size: 30px;
         }
 
         .page-login .login-header p,
@@ -109,7 +110,7 @@
 <body class="page-login">
 <div class="form-container">
     <div class="login-header">
-        <h1>RecipeApp</h1>
+        <h1>Recipin'</h1>
         <p>ログイン</p>
     </div>
 
@@ -215,6 +216,29 @@
             errorElement.parentNode.querySelector('input').style.borderColor = '#ccc';
         }
 
+        // フォーム送信の共通処理
+        function handleFormSubmit(e) {
+            // デフォルトの送信を一旦停止
+            e.preventDefault();
+
+            const isUsernameValid = validateUsername();
+            const isPasswordValid = validatePassword();
+
+            if (!isUsernameValid || !isPasswordValid) {
+                return false;
+            }
+
+            // 送信中の状態表示
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            loadingText.style.display = 'inline';
+            submitBtn.style.opacity = '0.7';
+
+            // バリデーション通過後、実際にフォームを送信
+            form.submit();
+            return true;
+        }
+
         // リアルタイムバリデーション
         usernameInput.addEventListener('blur', validateUsername);
         passwordInput.addEventListener('blur', validatePassword);
@@ -232,30 +256,15 @@
             }
         });
 
-        // フォーム送信処理
-        form.addEventListener('submit', function(e) {
-            const isUsernameValid = validateUsername();
-            const isPasswordValid = validatePassword();
-
-            if (!isUsernameValid || !isPasswordValid) {
-                e.preventDefault();
-                return false;
-            }
-
-            // 送信中の状態表示
-            submitBtn.disabled = true;
-            submitText.style.display = 'none';
-            loadingText.style.display = 'inline';
-            submitBtn.style.opacity = '0.7';
-
-            return true;
-        });
+        // フォーム送信処理（ボタンクリック）
+        form.addEventListener('submit', handleFormSubmit);
 
         // Enterキーでのフォーム送信
         [usernameInput, passwordInput].forEach(input => {
             input.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    form.dispatchEvent(new Event('submit'));
+                    e.preventDefault(); // デフォルト動作を防ぐ
+                    handleFormSubmit(e);
                 }
             });
         });

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RecipeApp</title>
+    <title>Recipin'</title>
     <meta name="description" content="sample text">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 
@@ -37,7 +37,7 @@
         <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="メニューを開く">
             <span></span>
         </button>
-        <div class="title">RecipeApp</div>
+        <div class="title">Recipin'</div>
         <div class="header-right">
             <!-- ヘッダー右側 -->
             <div class="user-info" sec:authorize="isAuthenticated()">
@@ -80,20 +80,28 @@
                     </a>
                 </li>
                 <li>
-                    <img src="/images/icons/category.svg" alt="カテゴリ" />
-                    <span>カテゴリ</span>
+                    <div class="menu-item" onclick="showCategoriesPage()">
+                        <img src="/images/icons/category.svg" alt="カテゴリ" />
+                        <span>カテゴリ一覧</span>
+                    </div>
                 </li>
                 <li>
-                    <img src="/images/icons/user.svg" alt="ユーザー情報" />
-                    <span>ユーザー情報</span>
+                    <div class="menu-item" onclick="showUserInfo()">
+                        <img src="/images/icons/user.svg" alt="ユーザー情報" />
+                        <span>ユーザー情報</span>
+                    </div>
                 </li>
                 <li>
-                    <img src="/images/icons/interrogation.svg" alt="ヘルプ" />
-                    <span>ヘルプ</span>
+                    <div class="menu-item" onclick="showHelp()">
+                        <img src="/images/icons/interrogation.svg" alt="ヘルプ" />
+                        <span>ヘルプ</span>
+                    </div>
                 </li>
                 <li class="bottom">
-                    <img src="/images/icons/settings.svg" alt="設定" />
-                    <span>設定</span>
+                    <div class="menu-item" onclick="showSettings()">
+                        <img src="/images/icons/settings.svg" alt="設定" />
+                        <span>設定</span>
+                    </div>
                 </li>
                 <li class="bottom" sec:authorize="isAuthenticated()">
                     <form th:action="@{/logout}" method="post" style="margin:0;">
@@ -123,125 +131,812 @@
                 </a>
             </div>
         </div>
-        <div class="section-header">
-            <div class="section-title">
-                <h2 th:if="${favoritesPage != null and favoritesPage}" th:text="'お気に入りレシピ一覧 (' + ${#lists.size(recipes)} + '件)'">お気に入り</h2>
-                <h2 th:if="${categoryName != null}" th:text="'カテゴリ：' + ${categoryName} + ' (' + ${#lists.size(recipes)} + '件)'">カテゴリ</h2>
-                <h2 th:if="${favoritesPage == null and categoryName == null}" th:text="'すべてのレシピ一覧 (' + ${#lists.size(recipes)} + '件)'">すべてのレシピ</h2>
+
+        <!-- 通常のレシピ表示 -->
+        <div id="normalView">
+            <div class="section-header">
+                <div class="section-title">
+                    <h2 th:if="${favoritesPage != null and favoritesPage}" th:text="'お気に入りレシピ一覧 (' + ${#lists.size(recipes)} + '件)'">お気に入り</h2>
+                    <h2 th:if="${categoryName != null}" th:text="'カテゴリ：' + ${categoryName} + ' (' + ${#lists.size(recipes)} + '件)'">カテゴリ</h2>
+                    <h2 th:if="${favoritesPage == null and categoryName == null}" th:text="'すべてのレシピ一覧 (' + ${#lists.size(recipes)} + '件)'">すべてのレシピ</h2>
+                </div>
+            </div>
+
+            <!-- 成功・エラーメッセージ表示 -->
+            <div th:if="${successMessage}" class="flash-message success-message">
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="flash-message error-message">
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <p th:if="${#lists.isEmpty(recipes)}" class="no-recipes-message">レシピが見つかりませんでした。</p>
+            <p id="noResultsMessage" class="no-results-message" style="display: none;">検索条件に一致するレシピが見つかりませんでした。</p>
+
+            <!-- レシピカード表示 -->
+            <div class="card-list" th:if="${not #lists.isEmpty(recipes)}">
+                <section class="card" th:each="recipe : ${recipes}" th:attr="data-recipe-id=${recipe.id}">
+                    <div class="card-menu">
+                        <button class="menu-toggle" aria-label="メニューを開く">︙</button>
+                        <div class="menu-content">
+                            <form th:action="@{'/recipes/edit/' + ${recipe.id}}" method="get" style="margin:0;">
+                                <button type="submit" class="edit-button">編集</button>
+                            </form>
+                            <button type="button" class="delete-button" th:attr="data-recipe-id=${recipe.id}">削除</button>
+                        </div>
+                    </div>
+                    <div class="card-image-wrapper">
+                        <img th:if="${recipe.imagePath != null}" th:src="@{${recipe.imagePath}}" alt="レシピ画像" class="card-image" loading="lazy" />
+                        <img th:if="${recipe.imagePath == null}" th:src="@{/images/no-image.png}" alt="レシピ画像なし" class="card-no-image" loading="lazy" />
+                        <div class="card-overlay">
+                            <h2 th:text="${recipe.title}" class="overlay-title">レシピ名</h2>
+                            <button class="favorite-toggle" th:attr="data-id=${recipe.id}" aria-label="お気に入りに追加">
+                                <img class="heart-image" th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'" alt="お気に入り" />
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                      <span th:each="cat : ${recipe.categories}">
+                         <a th:href="@{'/recipes/category/' + ${cat}}"
+                            th:text="${cat}"
+                            th:classappend="'category-tag ' + ${cat}"
+                            title="このカテゴリのレシピを表示">
+                            カテゴリ
+                        </a>
+                      </span>
+                    </div>
+                </section>
             </div>
         </div>
 
-        <!-- 成功・エラーメッセージ表示 -->
-        <div th:if="${successMessage}" class="flash-message success-message">
-            <span th:text="${successMessage}"></span>
-        </div>
-        <div th:if="${errorMessage}" class="flash-message error-message">
-            <span th:text="${errorMessage}"></span>
-        </div>
-
-        <p th:if="${#lists.isEmpty(recipes)}" class="no-recipes-message">レシピが見つかりませんでした。</p>
-        <p id="noResultsMessage" class="no-results-message" style="display: none;">検索条件に一致するレシピが見つかりませんでした。</p>
-
-        <!-- レシピカード表示 -->
-        <div class="card-list" th:if="${not #lists.isEmpty(recipes)}">
-            <section class="card" th:each="recipe : ${recipes}" th:attr="data-recipe-id=${recipe.id}">
-                <div class="card-menu">
-                    <button class="menu-toggle" aria-label="メニューを開く">︙</button>
-                    <div class="menu-content">
-                        <form th:action="@{'/recipes/edit/' + ${recipe.id}}" method="get" style="margin:0;">
-                            <button type="submit" class="edit-button">編集</button>
-                        </form>
-                        <button type="button" class="delete-button" th:attr="data-recipe-id=${recipe.id}">削除</button>
-                    </div>
+        <!-- カテゴリ別表示ビュー -->
+        <div id="categoriesView" style="display: none;">
+            <div class="section-header">
+                <div class="section-title">
+                    <h2>📂 カテゴリ別レシピ一覧</h2>
                 </div>
-                <div class="card-image-wrapper">
-                    <img th:if="${recipe.imagePath != null}" th:src="@{${recipe.imagePath}}" alt="レシピ画像" class="card-image" loading="lazy" />
-                    <img th:if="${recipe.imagePath == null}" th:src="@{/images/no-image.png}" alt="レシピ画像なし" class="card-no-image" loading="lazy" />
-                    <div class="card-overlay">
-                        <h2 th:text="${recipe.title}" class="overlay-title">レシピ名</h2>
-                        <button class="favorite-toggle" th:attr="data-id=${recipe.id}" aria-label="お気に入りに追加">
-                            <img class="heart-image" th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'" alt="お気に入り" />
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                  <span th:each="cat : ${recipe.categories}">
-                     <a th:href="@{'/recipes/category/' + ${cat}}"
-                        th:text="${cat}"
-                        th:classappend="'category-tag ' + ${cat}"
-                        title="このカテゴリのレシピを表示">
-                        カテゴリ
-                    </a>
-                  </span>
-                </div>
-            </section>
+                <button class="back-button" onclick="hideCategoriesPage()">
+                    <span>← 戻る</span>
+                </button>
+            </div>
+            <div id="categoriesContainer">
+                <!-- 動的にカテゴリ別レシピが挿入される -->
+            </div>
         </div>
     </main>
 </div>
 
-<script>
-    // 検索機能の改善
-    const searchInput = document.getElementById('searchInput');
-    const recipeCards = document.querySelectorAll('.card');
+<!-- モーダルダイアログ -->
+<div id="modalOverlay" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">タイトル</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- 動的にコンテンツが挿入される -->
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn" onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
+</div>
 
-    // 正規化関数（カタカナ→ひらがな、小文字化、全角→半角）
-    function normalizeText(str) {
-      return str
-        .toLowerCase()
-        .normalize("NFKC")
-        .replace(/[ァ-ン]/g, s => String.fromCharCode(s.charCodeAt(0) - 0x60));
+<script>
+    // ダークモード管理クラス
+class DarkModeManager {
+    constructor() {
+        this.init();
     }
 
-    // リアルタイム検索機能
-    function performSearch() {
-        const keywordRaw = searchInput.value.trim();
-        const keyword = normalizeText(keywordRaw);
+    init() {
+        // 初期設定の読み込み
+        this.loadSettings();
+        // 設定変更の監視
+        this.watchStorageChanges();
+    }
 
-        const noResultsMessage = document.getElementById('noResultsMessage');
-        const noRecipesMessage = document.querySelector('.no-recipes-message');
-        let visibleCardCount = 0;
+    loadSettings() {
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        const compactView = localStorage.getItem('compactView') === 'true';
 
-        // 検索キーワードが空の場合は全て表示
-        if (keyword === '') {
-            recipeCards.forEach(card => {
-                card.style.display = '';
-                visibleCardCount++;
-            });
-            noResultsMessage.style.display = 'none';
-            return;
+        if (darkMode) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
         }
 
-        recipeCards.forEach(card => {
-            const titleElement = card.querySelector('h2');
-            const categoryElements = card.querySelectorAll('.category-tag');
+        if (compactView) {
+            document.querySelector('.card-list')?.classList.add('compact-view');
+        }
+    }
 
-            const title = normalizeText(titleElement ? titleElement.textContent : '');
-            const categories = Array.from(categoryElements).map(el =>
-                normalizeText(el ? el.textContent : '')
-            ).join(' ');
+    toggle() {
+        const isDark = document.body.classList.contains('dark-mode');
+        if (isDark) {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'false');
+        } else {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        }
 
-            const titleMatch = title.includes(keyword);
-            const categoryMatch = categories.includes(keyword);
+        // 他のタブ/ウィンドウに変更を通知
+        this.broadcastChange();
+    }
 
-            if (titleMatch || categoryMatch) {
-                card.style.display = '';
-                visibleCardCount++;
-            } else {
-                card.style.display = 'none';
+    watchStorageChanges() {
+        // localStorage の変更を監視（他のタブからの変更）
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'darkMode') {
+                this.loadSettings();
             }
         });
 
-        // 検索結果メッセージの表示制御
-        if (visibleCardCount === 0) {
-            noResultsMessage.style.display = 'block';
-            if (noRecipesMessage) {
-                noRecipesMessage.style.display = 'none';
-            }
+        // 同一タブ内での変更を監視
+        window.addEventListener('darkmodechange', () => {
+            this.loadSettings();
+        });
+    }
+
+    broadcastChange() {
+        // カスタムイベントを発火（同一タブ内）
+        window.dispatchEvent(new Event('darkmodechange'));
+    }
+}
+
+// グローバルダークモードマネージャーのインスタンス
+const darkModeManager = new DarkModeManager();
+
+// 検索機能の改善
+const searchInput = document.getElementById('searchInput');
+const recipeCards = document.querySelectorAll('.card');
+
+// 正規化関数（カタカナ→ひらがな、小文字化、全角→半角）
+function normalizeText(str) {
+  return str
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[ァ-ン]/g, s => String.fromCharCode(s.charCodeAt(0) - 0x60));
+}
+
+// リアルタイム検索機能
+function performSearch() {
+    const keywordRaw = searchInput.value.trim();
+    const keyword = normalizeText(keywordRaw);
+
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const noRecipesMessage = document.querySelector('.no-recipes-message');
+    let visibleCardCount = 0;
+
+    // 検索キーワードが空の場合は全て表示
+    if (keyword === '') {
+        recipeCards.forEach(card => {
+            card.style.display = '';
+            visibleCardCount++;
+        });
+        noResultsMessage.style.display = 'none';
+        return;
+    }
+
+    recipeCards.forEach(card => {
+        const titleElement = card.querySelector('h2');
+        const categoryElements = card.querySelectorAll('.category-tag');
+
+        const title = normalizeText(titleElement ? titleElement.textContent : '');
+        const categories = Array.from(categoryElements).map(el =>
+            normalizeText(el ? el.textContent : '')
+        ).join(' ');
+
+        const titleMatch = title.includes(keyword);
+        const categoryMatch = categories.includes(keyword);
+
+        if (titleMatch || categoryMatch) {
+            card.style.display = '';
+            visibleCardCount++;
         } else {
-            noResultsMessage.style.display = 'none';
+            card.style.display = 'none';
+        }
+    });
+
+    // 検索結果メッセージの表示制御
+    if (visibleCardCount === 0) {
+        noResultsMessage.style.display = 'block';
+        if (noRecipesMessage) {
+            noRecipesMessage.style.display = 'none';
+        }
+    } else {
+        noResultsMessage.style.display = 'none';
+    }
+}
+
+// サイドバー機能
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('active');
+}
+
+function checkScreenSize() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.querySelector('.sidebar-toggle');
+
+    if (window.innerWidth > 768) {
+        // デスクトップサイズの場合、サイドバーを閉じる
+        sidebar.classList.remove('active');
+    }
+}
+
+// カテゴリ別表示機能
+async function showCategoriesPage() {
+    try {
+        // 全レシピを取得
+        const allRecipes = Array.from(document.querySelectorAll('.card')).map(card => {
+            const titleElement = card.querySelector('.overlay-title');
+            const categoryElements = card.querySelectorAll('.category-tag');
+            const heartImage = card.querySelector('.heart-image');
+            const recipeImage = card.querySelector('.card-image, .card-no-image');
+
+            return {
+                id: card.getAttribute('data-recipe-id'),
+                title: titleElement ? titleElement.textContent : '',
+                categories: Array.from(categoryElements).map(el => el.textContent.trim()),
+                isFavorite: heartImage ? heartImage.src.includes('heart_active') : false,
+                imagePath: recipeImage ? recipeImage.src : '',
+                hasImage: recipeImage ? !recipeImage.src.includes('no-image') : false
+            };
+        });
+
+        // カテゴリごとにレシピを分類
+        const categoryMap = new Map();
+
+        allRecipes.forEach(recipe => {
+            recipe.categories.forEach(category => {
+                if (!categoryMap.has(category)) {
+                    categoryMap.set(category, []);
+                }
+                categoryMap.get(category).push(recipe);
+            });
+        });
+
+        // カテゴリがないレシピも表示
+        const uncategorizedRecipes = allRecipes.filter(recipe => recipe.categories.length === 0);
+        if (uncategorizedRecipes.length > 0) {
+            categoryMap.set('未分類', uncategorizedRecipes);
+        }
+
+        // HTMLを生成
+        let html = '';
+
+        // カテゴリを並び順でソート
+        const categoryOrder = ['和食', '洋食', '中華', '麺類', 'スープ', 'サラダ', 'おつまみ', 'デザート', '時短', 'ヘルシー', 'その他', '未分類'];
+        const sortedCategories = Array.from(categoryMap.keys()).sort((a, b) => {
+            const indexA = categoryOrder.indexOf(a);
+            const indexB = categoryOrder.indexOf(b);
+            if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+
+        sortedCategories.forEach(category => {
+            const recipes = categoryMap.get(category);
+            const categoryIcon = getCategoryIcon(category);
+
+            html += `
+                <div class="category-section">
+                    <div class="category-header">
+                        <h3 class="category-title">
+                            <span class="category-icon">${categoryIcon}</span>
+                            ${category}
+                            <span class="category-count">(${recipes.length}件)</span>
+                        </h3>
+                        <a href="/recipes/category/${encodeURIComponent(category)}" class="view-all-link">
+                            すべて表示 →
+                        </a>
+                    </div>
+                    <div class="category-recipes">
+            `;
+
+            recipes.slice(0, 4).forEach(recipe => { // 最初の4件のみ表示
+                html += `
+                    <div class="category-recipe-card" data-recipe-id="${recipe.id}">
+                        <div class="recipe-image-wrapper">
+                            <img src="${recipe.imagePath}" alt="レシピ画像"
+                                 class="${recipe.hasImage ? 'recipe-image' : 'recipe-no-image'}" loading="lazy" />
+                            <div class="recipe-overlay">
+                                <h4 class="recipe-title">${recipe.title}</h4>
+                                <button class="favorite-toggle-mini" data-id="${recipe.id}">
+                                    <img class="heart-image-mini"
+                                         src="${recipe.isFavorite ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'}"
+                                         alt="お気に入り" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (recipes.length > 4) {
+                html += `
+                    <div class="more-recipes-card">
+                        <a href="/recipes/category/${encodeURIComponent(category)}" class="more-recipes-link">
+                            <div class="more-recipes-content">
+                                <span class="plus-icon">+</span>
+                                <span class="more-count">他${recipes.length - 4}件</span>
+                            </div>
+                        </a>
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        if (html === '') {
+            html = '<p class="no-categories-message">カテゴリが設定されたレシピがありません。</p>';
+        }
+
+        document.getElementById('categoriesContainer').innerHTML = html;
+        document.getElementById('normalView').style.display = 'none';
+        document.getElementById('categoriesView').style.display = 'block';
+
+        // カテゴリ表示後にお気に入り機能を再バインド
+        bindFavoriteTogglesMini();
+
+    } catch (error) {
+        console.error('カテゴリ表示エラー:', error);
+        alert('カテゴリの表示に失敗しました。');
+    }
+}
+
+function hideCategoriesPage() {
+    document.getElementById('categoriesView').style.display = 'none';
+    document.getElementById('normalView').style.display = 'block';
+}
+
+function getCategoryIcon(category) {
+    const icons = {
+        '和食': '🍱',
+        '洋食': '🍝',
+        '中華': '🥟',
+        '麺類': '🍜',
+        'スープ': '🍲',
+        'サラダ': '🥗',
+        'おつまみ': '🍺',
+        'デザート': '🍰',
+        '時短': '⏰',
+        'ヘルシー': '🥬',
+        'その他': '📝',
+        '未分類': '📄'
+    };
+    return icons[category] || '📝';
+}
+
+// カテゴリページでのお気に入り機能
+function bindFavoriteTogglesMini() {
+    document.querySelectorAll(".favorite-toggle-mini").forEach(button => {
+        button.addEventListener("click", async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const recipeId = button.getAttribute("data-id");
+
+            try {
+                const response = await fetch(`/recipes/${recipeId}/toggleFavorite`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error("お気に入り切り替え失敗 HTTP: " + response.status);
+                }
+
+                const isFavorite = await response.json();
+                const img = button.querySelector("img");
+                img.src = isFavorite ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
+
+            } catch (error) {
+                console.error("Toggle Favorite Error:", error);
+                alert("お気に入りの切り替えに失敗しました。もう一度お試しください。");
+            }
+        });
+    });
+}
+
+// ユーザー情報表示
+function showUserInfo() {
+    const userInfo = `
+        <div class="user-stats">
+            <h4>📊 統計情報</h4>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number">${document.querySelectorAll('.card').length}</span>
+                    <span class="stat-label">総レシピ数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">${document.querySelectorAll('.card .heart-image[src*="heart_active"]').length}</span>
+                    <span class="stat-label">お気に入り数</span>
+                </div>
+            </div>
+            <h4>👤 ユーザー情報</h4>
+            <p><strong>ユーザー名:</strong> ${document.querySelector('.user-info span') ? document.querySelector('.user-info span').textContent.replace('ようこそ、', '').replace('さん', '') : 'ゲスト'}</p>
+            <p><strong>登録日:</strong> 2024年</p>
+        </div>
+    `;
+    showModal('ユーザー情報', userInfo);
+}
+
+// ヘルプ表示
+function showHelp() {
+    const helpContent = `
+        <div class="help-content">
+            <h4>📖 Recipin'の使い方</h4>
+            <div class="help-section">
+                <h5>🆕 レシピの追加</h5>
+                <p>右上の「追加」ボタンからレシピを新規作成できます。</p>
+            </div>
+            <div class="help-section">
+                <h5>🔍 検索機能</h5>
+                <p>検索バーでレシピ名やカテゴリで絞り込み検索ができます。</p>
+            </div>
+            <div class="help-section">
+                <h5>❤️ お気に入り</h5>
+                <p>レシピカードのハートアイコンでお気に入り登録できます。</p>
+            </div>
+            <div class="help-section">
+                <h5>🏷️ カテゴリ</h5>
+                <p>サイドバーの「カテゴリ一覧」からカテゴリ別にレシピを表示できます。</p>
+            </div>
+            <div class="help-section">
+                <h5>✏️ 編集・削除</h5>
+                <p>レシピカードの「⋮」メニューから編集・削除ができます。</p>
+            </div>
+        </div>
+    `;
+    showModal('ヘルプ', helpContent);
+}
+
+// 設定表示（スイッチ式）
+function showSettings() {
+    const settingsContent = `
+        <div class="settings-content">
+            <h4>⚙️ 設定</h4>
+            <div class="settings-section">
+                <h5>🎨 表示設定</h5>
+                <div class="setting-item">
+                    <span>ダークモード</span>
+                    <label class="switch">
+                        <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span>コンパクト表示</span>
+                    <label class="switch">
+                        <input type="checkbox" id="compactView" onchange="toggleCompactView()">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h5>📊 データ管理</h5>
+                <button class="settings-btn" onclick="exportData()">📥 データをエクスポート</button>
+                <button class="settings-btn danger" onclick="confirmDataReset()">🗑️ 全データリセット</button>
+            </div>
+            <div class="settings-section">
+                <h5>ℹ️ アプリ情報</h5>
+                <p><strong>バージョン:</strong> 1.0.0</p>
+                <p><strong>最終更新:</strong> 2024年</p>
+            </div>
+        </div>
+    `;
+    showModal('設定', settingsContent);
+
+    // 設定を読み込み
+    setTimeout(() => {
+        loadSettingsInModal();
+    }, 100);
+}
+
+// モーダル表示
+function showModal(title, content) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = content;
+    document.getElementById('modalOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // スクロール無効化
+}
+
+// モーダル閉じる
+function closeModal() {
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.body.style.overflow = 'auto'; // スクロール有効化
+}
+
+// 設定関連の関数
+function toggleDarkMode() {
+    const checkbox = document.getElementById('darkMode');
+    const isDark = checkbox ? checkbox.checked : !document.body.classList.contains('dark-mode');
+
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'true');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'false');
+    }
+
+    darkModeManager.broadcastChange();
+}
+
+function toggleCompactView() {
+    const checkbox = document.getElementById('compactView');
+    const isCompact = checkbox ? checkbox.checked : !document.querySelector('.card-list')?.classList.contains('compact-view');
+    const cardList = document.querySelector('.card-list');
+
+    if (isCompact && cardList) {
+        cardList.classList.add('compact-view');
+        localStorage.setItem('compactView', 'true');
+    } else if (cardList) {
+        cardList.classList.remove('compact-view');
+        localStorage.setItem('compactView', 'false');
+    }
+}
+
+// 設定モーダル内での設定読み込み
+function loadSettingsInModal() {
+    const darkModeCheckbox = document.getElementById('darkMode');
+    const compactViewCheckbox = document.getElementById('compactView');
+
+    if (darkModeCheckbox) {
+        darkModeCheckbox.checked = localStorage.getItem('darkMode') === 'true';
+    }
+    if (compactViewCheckbox) {
+        compactViewCheckbox.checked = localStorage.getItem('compactView') === 'true';
+    }
+}
+
+function exportData() {
+    // レシピデータの簡易エクスポート
+    const recipes = Array.from(document.querySelectorAll('.card')).map(card => {
+        const title = card.querySelector('.overlay-title')?.textContent || '';
+        const categories = Array.from(card.querySelectorAll('.category-tag')).map(tag => tag.textContent);
+        const isFavorite = card.querySelector('.heart-image')?.src.includes('heart_active') || false;
+        return { title, categories, isFavorite };
+    });
+
+    const dataStr = JSON.stringify(recipes, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'recipes-export.json';
+    link.click();
+
+    URL.revokeObjectURL(url);
+    alert('レシピデータをエクスポートしました！');
+}
+
+function confirmDataReset() {
+    if (confirm('⚠️ 警告\n\n全てのレシピデータが削除されます。\nこの操作は取り消すことができません。\n\n本当に実行しますか？')) {
+        if (confirm('最終確認：本当に全データを削除しますか？')) {
+            // 実際の削除処理はサーバーサイドで実装する必要があります
+            alert('データリセット機能は現在開発中です。');
+        }
+    }
+}
+
+// イベントリスナーの設定
+document.addEventListener('click', function (e) {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.querySelector('.sidebar-toggle');
+    const closeBtn = document.querySelector('.sidebar-close');
+    const sidebarContent = document.querySelector('.sidebar-content');
+
+    // モバイルサイズでのみ外側クリックでサイドバーを閉じる
+    if (window.innerWidth <= 768) {
+        if (!sidebarContent.contains(e.target) &&
+            !toggleBtn.contains(e.target) &&
+            !closeBtn.contains(e.target)) {
+            sidebar.classList.remove('active');
         }
     }
 
+    // モーダル外側クリックで閉じる
+    if (e.target.id === 'modalOverlay') {
+        closeModal();
+    }
+});
+
+// ESCキーでモーダル・サイドバーを閉じる
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const sidebar = document.getElementById('sidebar');
+        const modal = document.getElementById('modalOverlay');
+
+        if (modal.style.display === 'flex') {
+            closeModal();
+        } else if (sidebar.classList.contains('active')) {
+            sidebar.classList.remove('active');
+        }
+    }
+});
+
+// 画面サイズ変更時の処理
+window.addEventListener('resize', checkScreenSize);
+
+// カードメニュー機能
+document.addEventListener('click', function(event) {
+    const menuToggles = document.querySelectorAll('.menu-toggle');
+    const menuContents = document.querySelectorAll('.menu-content');
+
+    // メニュートグルがクリックされた場合
+    if (event.target.classList.contains('menu-toggle')) {
+        event.stopPropagation();
+
+        // 他のメニューを閉じる
+        menuContents.forEach(menu => {
+            if (menu !== event.target.nextElementSibling) {
+                menu.style.display = 'none';
+            }
+        });
+
+        // クリックされたメニューをトグル
+        const menuContent = event.target.nextElementSibling;
+        if (menuContent.style.display === 'flex') {
+            menuContent.style.display = 'none';
+        } else {
+            menuContent.style.display = 'flex';
+        }
+    } else {
+        // メニュー以外がクリックされた場合は全メニューを閉じる
+        menuContents.forEach(menu => {
+            menu.style.display = 'none';
+        });
+    }
+});
+
+// お気に入りトグル処理
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".favorite-toggle").forEach(button => {
+        button.addEventListener("click", async (event) => {
+            event.preventDefault();
+
+            const recipeId = button.getAttribute("data-id");
+
+            try {
+                const response = await fetch(`/recipes/${recipeId}/toggleFavorite`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error("お気に入り切り替え失敗 HTTP: " + response.status);
+                }
+
+                const isFavorite = await response.json();
+                const img = button.querySelector("img");
+                img.src = isFavorite ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
+
+                // アクセシビリティ: aria-label の更新
+                button.setAttribute('aria-label',
+                    isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'
+                );
+
+            } catch (error) {
+                console.error("Toggle Favorite Error:", error);
+                alert("お気に入りの切り替えに失敗しました。もう一度お試しください。");
+            }
+        });
+    });
+});
+
+// 削除ボタン処理（改善版）
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".delete-button").forEach(button => {
+        button.addEventListener("click", async (event) => {
+            event.preventDefault();
+
+            const recipeId = button.getAttribute("data-recipe-id");
+            const cardElement = document.querySelector(`[data-recipe-id="${recipeId}"]`);
+            const recipeName = cardElement ? cardElement.querySelector('.overlay-title').textContent : 'このレシピ';
+
+            if (!confirm(`「${recipeName}」を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
+                return;
+            }
+
+            // 削除中の視覚的フィードバック
+            const originalText = button.textContent;
+            button.textContent = '削除中...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`/recipes/${recipeId}/delete`, {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error("削除に失敗しました HTTP: " + response.status);
+                }
+
+                // 削除成功時、カードをDOMから削除
+                if (cardElement) {
+                    cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    cardElement.style.opacity = '0';
+                    cardElement.style.transform = 'scale(0.95)';
+
+                    setTimeout(() => {
+                        cardElement.remove();
+
+                        // カードが0件になった場合のメッセージ表示
+                        const remainingCards = document.querySelectorAll('.card[style*="display: none"], .card:not([style*="display: none"])');
+                        const visibleCards = Array.from(remainingCards).filter(card =>
+                            !card.style.display || card.style.display !== 'none'
+                        );
+
+                        if (visibleCards.length === 0) {
+                            const cardList = document.querySelector('.card-list');
+                            if (cardList) {
+                                cardList.style.display = 'none';
+                            }
+
+                            // 既存のメッセージがない場合のみ追加
+                            if (!document.querySelector('.no-recipes-message')) {
+                                const noRecipeMessage = document.createElement('p');
+                                noRecipeMessage.className = 'no-recipes-message';
+                                noRecipeMessage.textContent = 'レシピが見つかりませんでした。';
+                                document.querySelector('.main-content').appendChild(noRecipeMessage);
+                            }
+                        }
+
+                        // 件数表示の更新
+                        updateRecipeCount();
+                    }, 300);
+                }
+
+            } catch (error) {
+                console.error("Delete Recipe Error:", error);
+                alert("レシピの削除に失敗しました。もう一度お試しください。");
+
+                // エラー時はボタンを元に戻す
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        });
+    });
+});
+
+// 件数表示の更新
+function updateRecipeCount() {
+    const visibleCards = document.querySelectorAll('.card:not([style*="display: none"])');
+    const sectionTitle = document.querySelector('.section-title h2');
+
+    if (sectionTitle) {
+        const titleText = sectionTitle.textContent;
+        const countMatch = titleText.match(/\((\d+)件\)/);
+
+        if (countMatch) {
+            const newTitle = titleText.replace(/\(\d+件\)/, `(${visibleCards.length}件)`);
+            sectionTitle.textContent = newTitle;
+        }
+    }
+}
+
+// 検索機能のイベントリスナー
+if (searchInput) {
     // Enterキーでの検索実行
     searchInput.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
@@ -258,280 +953,76 @@
             performSearch();
         }, 300); // 300ms後に検索実行（連続入力時のパフォーマンス向上）
     });
+}
 
-    // サイドバー機能
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('active');
-    }
+// ローディング機能
+window.addEventListener('load', () => {
+    const loader = document.getElementById('loading');
+    const url = new URL(window.location.href);
+    const hasLoadingParam = url.searchParams.get('loading') === 'true';
 
-    function checkScreenSize() {
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.querySelector('.sidebar-toggle');
+    if (hasLoadingParam) {
+        if (loader) {
+            loader.style.display = 'flex';
 
-        if (window.innerWidth > 768) {
-            // デスクトップサイズの場合、サイドバーを閉じる
-            sidebar.classList.remove('active');
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 1500);
+
+            // loading=true を削除（履歴は残すが画面はリロードしない）
+            url.searchParams.delete('loading');
+            window.history.replaceState({}, document.title, url.toString());
+        }
+    } else {
+        if (loader) {
+            loader.remove(); // 二度目以降はDOMごと削除（ちらつき防止）
         }
     }
+});
 
-    document.addEventListener('click', function (e) {
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.querySelector('.sidebar-toggle');
-        const closeBtn = document.querySelector('.sidebar-close');
-        const sidebarContent = document.querySelector('.sidebar-content');
+// フラッシュメッセージの自動非表示
+document.addEventListener('DOMContentLoaded', function() {
+    // 初期化処理
+    checkScreenSize();
 
-        // モバイルサイズでのみ外側クリックでサイドバーを閉じる
-        if (window.innerWidth <= 768) {
-            if (!sidebarContent.contains(e.target) &&
-                !toggleBtn.contains(e.target) &&
-                !closeBtn.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-
-    // ESCキーでサイドバーを閉じる
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const sidebar = document.getElementById('sidebar');
-            if (sidebar.classList.contains('active')) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-
-    // 画面サイズ変更時の処理
-    window.addEventListener('resize', checkScreenSize);
-
-    // 初回読み込み時の処理
-    document.addEventListener('DOMContentLoaded', checkScreenSize);
-
-    // カードメニュー機能
-    document.addEventListener('click', function(event) {
-        const menuToggles = document.querySelectorAll('.menu-toggle');
-        const menuContents = document.querySelectorAll('.menu-content');
-
-        // メニュートグルがクリックされた場合
-        if (event.target.classList.contains('menu-toggle')) {
-            event.stopPropagation();
-
-            // 他のメニューを閉じる
-            menuContents.forEach(menu => {
-                if (menu !== event.target.nextElementSibling) {
-                    menu.style.display = 'none';
-                }
-            });
-
-            // クリックされたメニューをトグル
-            const menuContent = event.target.nextElementSibling;
-            if (menuContent.style.display === 'flex') {
-                menuContent.style.display = 'none';
-            } else {
-                menuContent.style.display = 'flex';
-            }
-        } else {
-            // メニュー以外がクリックされた場合は全メニューを閉じる
-            menuContents.forEach(menu => {
-                menu.style.display = 'none';
-            });
-        }
-    });
-
-    // お気に入りトグル処理
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".favorite-toggle").forEach(button => {
-            button.addEventListener("click", async (event) => {
-                event.preventDefault();
-
-                const recipeId = button.getAttribute("data-id");
-
-                try {
-                    const response = await fetch(`/recipes/${recipeId}/toggleFavorite`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error("お気に入り切り替え失敗 HTTP: " + response.status);
-                    }
-
-                    const isFavorite = await response.json();
-                    const img = button.querySelector("img");
-                    img.src = isFavorite ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
-
-                    // アクセシビリティ: aria-label の更新
-                    button.setAttribute('aria-label',
-                        isFavorite ? 'お気に入りから削除' : 'お気に入りに追加'
-                    );
-
-                } catch (error) {
-                    console.error("Toggle Favorite Error:", error);
-                    alert("お気に入りの切り替えに失敗しました。もう一度お試しください。");
-                }
-            });
-        });
-    });
-
-    // 削除ボタン処理（改善版）
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".delete-button").forEach(button => {
-            button.addEventListener("click", async (event) => {
-                event.preventDefault();
-
-                const recipeId = button.getAttribute("data-recipe-id");
-                const cardElement = document.querySelector(`[data-recipe-id="${recipeId}"]`);
-                const recipeName = cardElement ? cardElement.querySelector('.overlay-title').textContent : 'このレシピ';
-
-                if (!confirm(`「${recipeName}」を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
-                    return;
-                }
-
-                // 削除中の視覚的フィードバック
-                const originalText = button.textContent;
-                button.textContent = '削除中...';
-                button.disabled = true;
-
-                try {
-                    const response = await fetch(`/recipes/${recipeId}/delete`, {
-                        method: "DELETE",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        credentials: 'same-origin'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error("削除に失敗しました HTTP: " + response.status);
-                    }
-
-                    // 削除成功時、カードをDOMから削除
-                    if (cardElement) {
-                        cardElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                        cardElement.style.opacity = '0';
-                        cardElement.style.transform = 'scale(0.95)';
-
-                        setTimeout(() => {
-                            cardElement.remove();
-
-                            // カードが0件になった場合のメッセージ表示
-                            const remainingCards = document.querySelectorAll('.card[style*="display: none"], .card:not([style*="display: none"])');
-                            const visibleCards = Array.from(remainingCards).filter(card =>
-                                !card.style.display || card.style.display !== 'none'
-                            );
-
-                            if (visibleCards.length === 0) {
-                                const cardList = document.querySelector('.card-list');
-                                if (cardList) {
-                                    cardList.style.display = 'none';
-                                }
-
-                                // 既存のメッセージがない場合のみ追加
-                                if (!document.querySelector('.no-recipes-message')) {
-                                    const noRecipeMessage = document.createElement('p');
-                                    noRecipeMessage.className = 'no-recipes-message';
-                                    noRecipeMessage.textContent = 'レシピが見つかりませんでした。';
-                                    document.querySelector('.main-content').appendChild(noRecipeMessage);
-                                }
-                            }
-
-                            // 件数表示の更新
-                            updateRecipeCount();
-                        }, 300);
-                    }
-
-                } catch (error) {
-                    console.error("Delete Recipe Error:", error);
-                    alert("レシピの削除に失敗しました。もう一度お試しください。");
-
-                    // エラー時はボタンを元に戻す
-                    button.textContent = originalText;
-                    button.disabled = false;
-                }
-            });
-        });
-    });
-
-    // 件数表示の更新
-    function updateRecipeCount() {
-        const visibleCards = document.querySelectorAll('.card:not([style*="display: none"])');
-        const sectionTitle = document.querySelector('.section-title h2');
-
-        if (sectionTitle) {
-            const titleText = sectionTitle.textContent;
-            const countMatch = titleText.match(/\((\d+)件\)/);
-
-            if (countMatch) {
-                const newTitle = titleText.replace(/\(\d+件\)/, `(${visibleCards.length}件)`);
-                sectionTitle.textContent = newTitle;
-            }
-        }
-    }
-
-    // ローディング機能
-    window.addEventListener('load', () => {
-        const loader = document.getElementById('loading');
-        const url = new URL(window.location.href);
-        const hasLoadingParam = url.searchParams.get('loading') === 'true';
-
-        if (hasLoadingParam) {
-            if (loader) {
-                loader.style.display = 'flex';
-
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 1500);
-
-                // loading=true を削除（履歴は残すが画面はリロードしない）
-                url.searchParams.delete('loading');
-                window.history.replaceState({}, document.title, url.toString());
-            }
-        } else {
-            if (loader) {
-                loader.remove(); // 二度目以降はDOMごと削除（ちらつき防止）
-            }
-        }
-    });
+    // ダークモード設定を最初に読み込み
+    darkModeManager.loadSettings();
 
     // フラッシュメッセージの自動非表示
-    document.addEventListener('DOMContentLoaded', function() {
-        const flashMessages = document.querySelectorAll('.flash-message');
-        flashMessages.forEach(message => {
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(message => {
+        setTimeout(() => {
+            message.style.opacity = '0';
+            message.style.transform = 'translateY(-10px)';
             setTimeout(() => {
-                message.style.opacity = '0';
-                message.style.transform = 'translateY(-10px)';
-                setTimeout(() => {
-                    if (message.parentNode) {
-                        message.parentNode.removeChild(message);
-                    }
-                }, 300);
-            }, 4000); // 4秒後に非表示
+                if (message.parentNode) {
+                    message.parentNode.removeChild(message);
+                }
+            }, 300);
+        }, 4000); // 4秒後に非表示
+    });
+});
+
+// パフォーマンス最適化: 画像の遅延読み込み対応
+if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                    observer.unobserve(img);
+                }
+            }
         });
     });
 
-    // パフォーマンス最適化: 画像の遅延読み込み対応
-    if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                        img.removeAttribute('data-src');
-                        observer.unobserve(img);
-                    }
-                }
-            });
-        });
-
-        // 既存の loading="lazy" 属性のある画像を対象に
-        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
-            imageObserver.observe(img);
-        });
-    }
+    // 既存の loading="lazy" 属性のある画像を対象に
+    document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+        imageObserver.observe(img);
+    });
+}
 </script>
 
 </body>

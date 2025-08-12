@@ -23,6 +23,8 @@ import java.nio.file.Paths;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.util.NoSuchElementException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 public class RecipeController {
@@ -333,6 +335,185 @@ public class RecipeController {
         } catch (Exception e) {
             System.err.println("お気に入りトグルエラー: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 統計情報を取得するAPIエンドポイント
+     */
+    @GetMapping("/api/stats")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getRecipeStats() {
+        try {
+            List<Recipe> allRecipes = recipeRepository.findAll();
+            List<Recipe> favoriteRecipes = recipeRepository.findByFavoriteTrue();
+
+            // カテゴリ別の統計を計算
+            Map<String, Long> categoryStats = allRecipes.stream()
+                    .flatMap(recipe -> recipe.getCategories().stream())
+                    .collect(Collectors.groupingBy(
+                            category -> category,
+                            Collectors.counting()
+                    ));
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalRecipes", allRecipes.size());
+            stats.put("favoriteRecipes", favoriteRecipes.size());
+            stats.put("categoryStats", categoryStats);
+            stats.put("averageRecipesPerCategory",
+                    categoryStats.isEmpty() ? 0 :
+                            categoryStats.values().stream().mapToLong(Long::longValue).average().orElse(0));
+
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            System.err.println("統計情報取得エラー: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * データエクスポート機能
+     */
+    @GetMapping("/api/export")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> exportRecipeData() {
+        try {
+            List<Recipe> allRecipes = recipeRepository.findAll();
+
+            List<Map<String, Object>> exportData = allRecipes.stream().map(recipe -> {
+                Map<String, Object> recipeData = new HashMap<>();
+                recipeData.put("id", recipe.getId());
+                recipeData.put("title", recipe.getTitle());
+                recipeData.put("ingredients", recipe.getIngredients());
+                recipeData.put("instructions", recipe.getInstructions());
+                recipeData.put("categories", recipe.getCategories());
+                recipeData.put("favorite", recipe.isFavorite());
+                recipeData.put("reference", recipe.getReference());
+                recipeData.put("hasImage", recipe.getImagePath() != null);
+                return recipeData;
+            }).collect(Collectors.toList());
+
+            return ResponseEntity.ok(exportData);
+        } catch (Exception e) {
+            System.err.println("データエクスポートエラー: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 全レシピのカテゴリ一覧を取得
+     */
+    @GetMapping("/api/categories")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getAllCategories() {
+        try {
+            List<Recipe> allRecipes = recipeRepository.findAll();
+
+            // カテゴリとその使用回数を取得
+            Map<String, Long> categoryCount = allRecipes.stream()
+                    .flatMap(recipe -> recipe.getCategories().stream())
+                    .collect(Collectors.groupingBy(
+                            category -> category,
+                            Collectors.counting()
+                    ));
+
+            // カテゴリを使用回数の降順でソート
+            List<Map.Entry<String, Long>> sortedCategories = categoryCount.entrySet().stream()
+                    .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                    .collect(Collectors.toList());
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("categories", sortedCategories);
+            result.put("totalCategories", categoryCount.size());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("カテゴリ取得エラー: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 検索機能の強化（APIエンドポイント）
+     */
+    @GetMapping("/api/search")
+    @ResponseBody
+    public ResponseEntity<List<Recipe>> searchRecipes(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String ingredient,
+            @RequestParam(required = false) Boolean favorite) {
+        try {
+            List<Recipe> allRecipes = recipeRepository.findAll();
+
+            List<Recipe> filteredRecipes = allRecipes.stream()
+                    .filter(recipe -> {
+                        boolean matches = true;
+
+                        if (title != null && !title.trim().isEmpty()) {
+                            matches &= recipe.getTitle().toLowerCase()
+                                    .contains(title.toLowerCase());
+                        }
+
+                        if (category != null && !category.trim().isEmpty()) {
+                            matches &= recipe.getCategories().stream()
+                                    .anyMatch(cat -> cat.toLowerCase()
+                                            .contains(category.toLowerCase()));
+                        }
+
+                        if (ingredient != null && !ingredient.trim().isEmpty()) {
+                            matches &= recipe.getIngredients().toLowerCase()
+                                    .contains(ingredient.toLowerCase());
+                        }
+
+                        if (favorite != null) {
+                            matches &= recipe.isFavorite() == favorite;
+                        }
+
+                        return matches;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(filteredRecipes);
+        } catch (Exception e) {
+            System.err.println("検索エラー: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * レシピの一括削除（管理機能）
+     * 注意: 本番環境では適切な認証・認可を実装してください
+     */
+    @PostMapping("/api/admin/reset-data")
+    @ResponseBody
+    public ResponseEntity<String> resetAllData() {
+        try {
+            // 画像ファイルも削除
+            List<Recipe> allRecipes = recipeRepository.findAll();
+            Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+
+            for (Recipe recipe : allRecipes) {
+                if (recipe.getImagePath() != null) {
+                    try {
+                        Path imagePath = uploadPath.resolve(Paths.get(recipe.getImagePath()).getFileName());
+                        Files.deleteIfExists(imagePath);
+                    } catch (Exception imageDeleteError) {
+                        System.err.println("画像削除エラー: " + imageDeleteError.getMessage());
+                    }
+                }
+            }
+
+            // 全レシピを削除
+            recipeRepository.deleteAll();
+
+            System.out.println("全データがリセットされました。削除されたレシピ数: " + allRecipes.size());
+            return ResponseEntity.ok("データが正常にリセットされました。");
+
+        } catch (Exception e) {
+            System.err.println("データリセットエラー: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("データリセットに失敗しました: " + e.getMessage());
         }
     }
 
