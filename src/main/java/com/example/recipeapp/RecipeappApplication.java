@@ -12,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class RecipeappApplication {
 
     public static void main(String[] args) {
+        // Tomcatのファイルアップロード制限を設定（最優先）
+        System.setProperty("org.apache.tomcat.util.http.fileupload.fileCountMax", "10000");
+
         SpringApplication.run(RecipeappApplication.class, args);
     }
 
@@ -38,6 +41,10 @@ public class RecipeappApplication {
                 repo.save(normalUser);
                 System.out.println("初期一般ユーザー 'user' を作成しました（パスワード: password）");
             }
+
+            // Tomcatの設定を確認
+            String fileCountMax = System.getProperty("org.apache.tomcat.util.http.fileupload.fileCountMax");
+            System.out.println("Tomcat fileCountMax 設定値: " + fileCountMax);
         };
     }
 }

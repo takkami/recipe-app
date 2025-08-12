@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.NoSuchElementException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 @Controller
 public class RecipeController {
@@ -48,7 +49,7 @@ public class RecipeController {
         return "recipe_form";
     }
 
-    // カテゴリ数をバリデーションするヘルパーメソッド（修正版）
+    // カテゴリ数をバリデーションするヘルパーメソッド（改善版）
     private ValidationResult validateCategories(List<String> categories) {
         ValidationResult result = new ValidationResult();
 
@@ -58,17 +59,19 @@ public class RecipeController {
             return result;
         }
 
-        // 重複を除去し、空文字列とnullを除外（より厳密に）
-        Set<String> uniqueCategories = categories.stream()
-                .filter(cat -> cat != null && !cat.trim().isEmpty())
-                .map(String::trim)
-                .collect(Collectors.toSet());
+        // nullと空文字列を除外してから重複を除去
+        Set<String> uniqueCategories = new HashSet<>();
+        for (String cat : categories) {
+            if (cat != null && !cat.trim().isEmpty()) {
+                uniqueCategories.add(cat.trim());
+            }
+        }
 
-        System.out.println("バリデーション - 受信カテゴリ数: " + (categories != null ? categories.size() : 0));
+        System.out.println("バリデーション - 受信カテゴリ（重複含む）: " + categories);
         System.out.println("バリデーション - ユニークカテゴリ数: " + uniqueCategories.size());
         System.out.println("バリデーション - カテゴリ内容: " + uniqueCategories);
 
-        // カテゴリ数の制限チェック（厳格）
+        // カテゴリ数の制限チェック
         if (uniqueCategories.size() > MAX_CATEGORIES) {
             result.categories = uniqueCategories;
             result.isValid = false;
@@ -89,7 +92,7 @@ public class RecipeController {
         String errorMessage;
     }
 
-    // レシピを新規登録（修正版）
+    // レシピを新規登録（改善版）
     @PostMapping("/recipes/new")
     public String submitRecipe(@RequestParam String title,
                                @RequestParam String ingredients,
@@ -100,8 +103,7 @@ public class RecipeController {
                                @RequestParam("image") MultipartFile imageFile,
                                RedirectAttributes redirectAttributes) throws IOException {
 
-        System.out.println("新規登録 - 受信したカテゴリ: " + categories);
-        System.out.println("新規登録 - カテゴリ数: " + (categories != null ? categories.size() : 0));
+        System.out.println("新規登録 - 受信したカテゴリ（生データ）: " + categories);
 
         // 入力値の基本バリデーション
         if (title == null || title.trim().isEmpty()) {
@@ -109,8 +111,14 @@ public class RecipeController {
             return "redirect:/recipes/new";
         }
 
-        // カテゴリの厳格なバリデーション
-        ValidationResult validationResult = validateCategories(categories);
+        // カテゴリの重複を除去してからバリデーション
+        List<String> processedCategories = null;
+        if (categories != null) {
+            // 重複を除去したリストを作成
+            processedCategories = new ArrayList<>(new HashSet<>(categories));
+        }
+
+        ValidationResult validationResult = validateCategories(processedCategories);
         if (!validationResult.isValid) {
             redirectAttributes.addFlashAttribute("errorMessage", validationResult.errorMessage);
             redirectAttributes.addFlashAttribute("recipe", createRecipeFromParams(title, ingredients, instructions, favorite, reference, validationResult.categories));
@@ -127,7 +135,7 @@ public class RecipeController {
 
         System.out.println("新規登録 - 設定されたカテゴリ: " + validationResult.categories);
 
-        // 画像アップロード処理（プロジェクト直下の uploads ディレクトリへ）
+        // 画像アップロード処理
         if (imageFile != null && !imageFile.isEmpty()) {
             String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
             Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
@@ -135,7 +143,7 @@ public class RecipeController {
             Path filePath = uploadPath.resolve(fileName);
             imageFile.transferTo(filePath.toFile());
 
-            recipe.setImagePath("/uploads/" + fileName); // HTMLで表示する相対パス
+            recipe.setImagePath("/uploads/" + fileName);
         }
 
         try {
@@ -162,7 +170,7 @@ public class RecipeController {
         return "recipe_form";
     }
 
-    // 編集内容を保存（修正版）
+    // 編集内容を保存（改善版）
     @PostMapping("/recipes/update")
     public String updateRecipe(@RequestParam Long id,
                                @RequestParam String title,
@@ -176,8 +184,7 @@ public class RecipeController {
                                RedirectAttributes redirectAttributes
     ) throws IOException {
 
-        System.out.println("更新 - 受信したカテゴリ: " + categories);
-        System.out.println("更新 - カテゴリ数: " + (categories != null ? categories.size() : 0));
+        System.out.println("更新 - 受信したカテゴリ（生データ）: " + categories);
 
         // 入力値の基本バリデーション
         if (title == null || title.trim().isEmpty()) {
@@ -185,8 +192,14 @@ public class RecipeController {
             return "redirect:/recipes/edit/" + id;
         }
 
-        // カテゴリの厳格なバリデーション
-        ValidationResult validationResult = validateCategories(categories);
+        // カテゴリの重複を除去してからバリデーション
+        List<String> processedCategories = null;
+        if (categories != null) {
+            // 重複を除去したリストを作成
+            processedCategories = new ArrayList<>(new HashSet<>(categories));
+        }
+
+        ValidationResult validationResult = validateCategories(processedCategories);
         if (!validationResult.isValid) {
             redirectAttributes.addFlashAttribute("errorMessage", validationResult.errorMessage);
             return "redirect:/recipes/edit/" + id;
@@ -200,6 +213,9 @@ public class RecipeController {
         existingRecipe.setInstructions(instructions);
         existingRecipe.setFavorite(favorite);
         existingRecipe.setReference(reference);
+
+        // カテゴリをクリアしてから新しいカテゴリを設定
+        existingRecipe.clearCategories();
         existingRecipe.setCategories(validationResult.categories);
 
         System.out.println("更新 - 設定されたカテゴリ: " + validationResult.categories);
