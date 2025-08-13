@@ -20,770 +20,831 @@
             <span></span>
         </button>
         <div class="title">Recipin'</div>
+        <div class="header-right">
+            <!-- ヘッダー右側 -->
+            <div class="user-info" sec:authorize="isAuthenticated()">
+                <span th:text="'ようこそ、' + ${#authentication.name} + 'さん'">ユーザー名</span>
+            </div>
+            <div class="header-actions" sec:authorize="isAuthenticated()">
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <button type="submit" class="logout-btn">ログアウト</button>
+                </form>
+            </div>
+        </div>
+    </header>
 
-        <script>
-            // フォーム画面用ダークモード対応
-            class FormDarkModeManager {
-                constructor() {
-                    this.init();
-                }
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <button class="sidebar-close" onclick="toggleSidebar()" aria-label="メニューを閉じる">
+                    ✕
+                </button>
+            </div>
+            <ul>
+                <li>
+                    <a href="/home" class="home-button">
+                        <img src="/images/icons/home.svg" alt="ホーム" />
+                        <span>ホーム</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/home">
+                        <img src="/images/icons/book.svg" alt="レシピ一覧" />
+                        <span>レシピ一覧</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/recipes/favorites">
+                        <img src="/images/icons/heart.svg" alt="お気に入り">
+                        <span>お気に入り</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/home">
+                        <img src="/images/icons/category.svg" alt="カテゴリ一覧" />
+                        <span>カテゴリ一覧</span>
+                    </a>
+                </li>
+                <li>
+                    <div class="menu-item" onclick="showUserInfo()">
+                        <img src="/images/icons/user.svg" alt="ユーザー情報" />
+                        <span>ユーザー情報</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="menu-item" onclick="showHelp()">
+                        <img src="/images/icons/interrogation.svg" alt="ヘルプ" />
+                        <span>ヘルプ</span>
+                    </div>
+                </li>
+                <li class="bottom">
+                    <div class="menu-item" onclick="showSettings()">
+                        <img src="/images/icons/settings.svg" alt="設定" />
+                        <span>設定</span>
+                    </div>
+                </li>
+                <li class="bottom" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" style="margin:0;">
+                        <button type="submit" class="logout-sidebar-btn">
+                            <img src="/images/icons/logout.svg" alt="ログアウト" />
+                            <span>ログアウト</span>
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </nav>
 
-                init() {
-                    // 初期設定の読み込み
+    <main class="main-content">
+        <div class="section-header">
+            <div class="section-title">
+                <h1 th:text="${recipe.id} != null ? 'レシピを編集' : 'レシピを追加'">レシピを追加</h1>
+            </div>
+            <div class="add-button-container">
+                <a href="/home" class="add-button back-button">
+                    <span class="add-text">戻る</span>
+                    <img src="/images/icons/back.svg" alt="戻る">
+                </a>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <!-- お気に入りボタンを右上に配置（修正版） -->
+            <button type="button" class="favorite-toggle favorite-top-right" onclick="toggleFavorite(this)" aria-label="お気に入りに追加">
+                <img id="favorite-icon"
+                     th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'"
+                     th:classappend="${recipe.favorite} ? ' selected' : ''"
+                     alt="お気に入り"
+                     class="heart-image">
+            </button>
+
+            <!-- フラッシュメッセージ表示 -->
+            <div th:if="${successMessage}" class="flash-message success-message">
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${warningMessage}" class="flash-message warning-message">
+                <span th:text="${warningMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="flash-message error-message">
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" th:object="${recipe}" method="post" enctype="multipart/form-data" id="recipe-form">
+                <!-- ID（編集時のみ） -->
+                <input type="hidden" th:if="${recipe.id}" th:name="id" th:value="${recipe.id}" />
+
+                <!-- お気に入りの値を保持する隠しフィールド -->
+                <input type="hidden" th:name="favorite" th:value="${recipe.favorite}" id="favorite-input" />
+
+                <div class="form-group">
+                    <label for="title">タイトル <span style="color: red;">*</span></label>
+                    <input type="text" id="title" th:name="title" th:value="${recipe.title}" required maxlength="100">
+                </div>
+
+                <div class="form-group">
+                    <label for="image">レシピ画像</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
+                        📷 画像を選択
+                    </div>
+
+                    <!-- 編集時の既存画像表示と削除 -->
+                    <div th:if="${recipe.imagePath}" class="image-preview-container" id="current-image-wrapper">
+                        <span class="current-image-label">現在の画像:</span>
+                        <img th:src="@{${recipe.imagePath}}" alt="現在の画像" class="image-preview" id="current-image" />
+                        <button type="button" class="image-remove" onclick="removeCurrentImage()">×</button>
+                        <input type="hidden" name="deleteCurrentImage" id="deleteCurrentImage" value="false" />
+                    </div>
+
+                    <!-- 新しい画像のプレビュー -->
+                    <div class="image-preview-container" id="preview-container" style="display: none;">
+                        <span class="current-image-label">選択した画像:</span>
+                        <img id="image-preview" class="image-preview" alt="画像プレビュー" />
+                        <button type="button" class="image-remove" onclick="removeImagePreview()">×</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ingredients">材料</label>
+                    <textarea id="ingredients" th:name="ingredients" th:text="${recipe.ingredients}" placeholder="例：&#10;・玉ねぎ 1個&#10;・にんじん 1本&#10;・じゃがいも 2個"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="instructions">作り方</label>
+                    <textarea id="instructions" th:name="instructions" th:text="${recipe.instructions}" placeholder="例：&#10;1. 玉ねぎを薄切りにする&#10;2. フライパンで炒める&#10;3. 塩胡椒で味付けする"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="reference">参考動画・サイト（URL）</label>
+                    <input type="url" id="reference" th:name="reference" th:value="${recipe.reference}" placeholder="https://example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="category-select">カテゴリ（最大3つまで選択可）</label>
+                    <div class="category-selector">
+                        <div class="custom-select">
+                            <div class="select-trigger" onclick="toggleDropdown()" tabindex="0">
+                                <span id="selected-categories">カテゴリを選択してください</span>
+                                <span class="arrow">▼</span>
+                            </div>
+                            <div class="select-options" id="category-options">
+                                <!-- チェックボックスはUI用のみ、実際の送信はしない -->
+                                <label class="option"><input type="checkbox" data-category="和食" th:checked="${recipe.categories != null and recipe.categories.contains('和食')}"> 和食</label>
+                                <label class="option"><input type="checkbox" data-category="洋食" th:checked="${recipe.categories != null and recipe.categories.contains('洋食')}"> 洋食</label>
+                                <label class="option"><input type="checkbox" data-category="中華" th:checked="${recipe.categories != null and recipe.categories.contains('中華')}"> 中華</label>
+                                <label class="option"><input type="checkbox" data-category="麺類" th:checked="${recipe.categories != null and recipe.categories.contains('麺類')}"> 麺類</label>
+                                <label class="option"><input type="checkbox" data-category="スープ" th:checked="${recipe.categories != null and recipe.categories.contains('スープ')}"> スープ</label>
+                                <label class="option"><input type="checkbox" data-category="サラダ" th:checked="${recipe.categories != null and recipe.categories.contains('サラダ')}"> サラダ</label>
+                                <label class="option"><input type="checkbox" data-category="おつまみ" th:checked="${recipe.categories != null and recipe.categories.contains('おつまみ')}"> おつまみ</label>
+                                <label class="option"><input type="checkbox" data-category="デザート" th:checked="${recipe.categories != null and recipe.categories.contains('デザート')}"> デザート</label>
+                                <label class="option"><input type="checkbox" data-category="時短" th:checked="${recipe.categories != null and recipe.categories.contains('時短')}"> 時短</label>
+                                <label class="option"><input type="checkbox" data-category="ヘルシー" th:checked="${recipe.categories != null and recipe.categories.contains('ヘルシー')}"> ヘルシー</label>
+                                <label class="option"><input type="checkbox" data-category="その他" th:checked="${recipe.categories != null and recipe.categories.contains('その他')}"> その他</label>
+                            </div>
+                        </div>
+                        <!-- カテゴリ制限メッセージ -->
+                        <div id="category-limit-message" class="category-limit-message" style="display: none;">
+                            カテゴリの選択は3つまでです。
+                        </div>
+                        <div class="selected-tags" id="selected-tags"></div>
+                        <!-- 実際に送信される隠しフィールド（最大3つ） -->
+                        <div id="hidden-categories-container">
+                            <!-- JavaScriptで動的に生成される -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-wrapper">
+                    <button type="button" class="submit-button" th:text="${recipe.id} != null ? '更新' : '登録'" id="submit-btn" onclick="submitFormAsJson(event)">登録</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+
+<script>
+    // フォーム画面用ダークモード対応
+    class FormDarkModeManager {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            this.loadSettings();
+            this.watchStorageChanges();
+        }
+
+        loadSettings() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        watchStorageChanges() {
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'darkMode') {
                     this.loadSettings();
-                    // 設定変更の監視
-                    this.watchStorageChanges();
-                }
-
-                loadSettings() {
-                    const darkMode = localStorage.getItem('darkMode') === 'true';
-                    const compactView = localStorage.getItem('compactView') === 'true';
-
-                    if (darkMode) {
-                        document.body.classList.add('dark-mode');
-                    } else {
-                        document.body.classList.remove('dark-mode');
-                    }
-                }
-
-                watchStorageChanges() {
-                    // localStorage の変更を監視
-                    window.addEventListener('storage', (e) => {
-                        if (e.key === 'darkMode') {
-                            this.loadSettings();
-                        }
-                    });
-
-                    window.addEventListener('darkmodechange', () => {
-                        this.loadSettings();
-                    });
-                }
-
-                broadcastChange() {
-                    window.dispatchEvent(new Event('darkmodechange'));
-                }
-            }
-
-            // 設定関数
-            function toggleDarkMode() {
-                const checkbox = document.getElementById('darkMode');
-                const isDark = checkbox ? checkbox.checked : !document.body.classList.contains('dark-mode');
-
-                if (isDark) {
-                    document.body.classList.add('dark-mode');
-                    localStorage.setItem('darkMode', 'true');
-                } else {
-                    document.body.classList.remove('dark-mode');
-                    localStorage.setItem('darkMode', 'false');
-                }
-
-                formDarkModeManager.broadcastChange();
-            }
-
-            function toggleCompactView() {
-                const checkbox = document.getElementById('compactView');
-                const isCompact = checkbox ? checkbox.checked : false;
-
-                localStorage.setItem('compactView', isCompact ? 'true' : 'false');
-            }
-
-            // モーダル表示機能
-            function showModal(title, content) {
-                // 既存のモーダルがあれば削除
-                const existingModal = document.getElementById('formModalOverlay');
-                if (existingModal) {
-                    existingModal.remove();
-                }
-
-                // モーダルHTML作成
-                const modalHTML = `
-                    <div id="formModalOverlay" class="modal-overlay" style="display: flex;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h3>${title}</h3>
-                                <button class="modal-close" onclick="closeFormModal()">&times;</button>
-                            </div>
-                            <div class="modal-body">
-                                ${content}
-                            </div>
-                            <div class="modal-footer">
-                                <button class="modal-btn" onclick="closeFormModal()">閉じる</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                document.body.insertAdjacentHTML('beforeend', modalHTML);
-                document.body.style.overflow = 'hidden';
-
-                // ESCキーでモーダルを閉じる
-                document.addEventListener('keydown', function escHandler(e) {
-                    if (e.key === 'Escape') {
-                        closeFormModal();
-                        document.removeEventListener('keydown', escHandler);
-                    }
-                });
-
-                // 外側クリックでモーダルを閉じる
-                document.getElementById('formModalOverlay').addEventListener('click', function(e) {
-                    if (e.target.id === 'formModalOverlay') {
-                        closeFormModal();
-                    }
-                });
-            }
-
-            function closeFormModal() {
-                const modal = document.getElementById('formModalOverlay');
-                if (modal) {
-                    modal.remove();
-                    document.body.style.overflow = 'auto';
-                }
-            }
-
-            // 設定表示
-            function showSettings() {
-                const settingsContent = `
-                    <div class="settings-content">
-                        <h4>⚙️ 設定</h4>
-                        <div class="settings-section">
-                            <h5>🎨 表示設定</h5>
-                            <div class="setting-item">
-                                <span>ダークモード</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div class="setting-item">
-                                <span>コンパクト表示</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="compactView" onchange="toggleCompactView()">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="settings-section">
-                            <h5>ℹ️ アプリ情報</h5>
-                            <p><strong>バージョン:</strong> 1.0.0</p>
-                            <p><strong>最終更新:</strong> 2024年</p>
-                        </div>
-                    </div>
-                `;
-                showModal('設定', settingsContent);
-
-                setTimeout(() => {
-                    loadSettingsInModal();
-                }, 100);
-            }
-
-            function loadSettingsInModal() {
-                const darkModeCheckbox = document.getElementById('darkMode');
-                const compactViewCheckbox = document.getElementById('compactView');
-
-                if (darkModeCheckbox) {
-                    darkModeCheckbox.checked = localStorage.getItem('darkMode') === 'true';
-                }
-                if (compactViewCheckbox) {
-                    compactViewCheckbox.checked = localStorage.getItem('compactView') === 'true';
-                }
-            }
-
-            // ユーザー情報表示
-            function showUserInfo() {
-                const userInfo = `
-                    <div class="user-stats">
-                        <h4>👤 ユーザー情報</h4>
-                        <p><strong>現在のページ:</strong> レシピフォーム</p>
-                        <p><strong>登録日:</strong> 2024年</p>
-                    </div>
-                `;
-                showModal('ユーザー情報', userInfo);
-            }
-
-            // ヘルプ表示
-            function showHelp() {
-                const helpContent = `
-                    <div class="help-content">
-                        <h4>📖 RecipeAppの使い方</h4>
-                        <div class="help-section">
-                            <h5>🆕 レシピの追加</h5>
-                            <p>フォームに必要な情報を入力してレシピを作成できます。</p>
-                        </div>
-                        <div class="help-section">
-                            <h5>📝 入力のコツ</h5>
-                            <p>材料と手順は詳しく記入すると、後で見返しやすくなります。</p>
-                        </div>
-                    </div>
-                `;
-                showModal('ヘルプ', helpContent);
-            }
-
-            // サイドバー機能（フォーム画面用）
-            function toggleSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar) {
-                    sidebar.classList.toggle('active');
-                }
-            }
-
-            // 初期化
-            const formDarkModeManager = new FormDarkModeManager();
-
-            document.addEventListener('DOMContentLoaded', function() {
-                formDarkModeManager.loadSettings();
-            });
-        </script>
-
-        <script>
-            // モバイル対応のサイドバー機能
-            function toggleSidebar() {
-                const sidebar = document.getElementById('sidebar');
-                sidebar.classList.toggle('active');
-            }
-
-            function checkScreenSize() {
-                const sidebar = document.getElementById('sidebar');
-                if (window.innerWidth > 768) {
-                    sidebar.classList.remove('active');
-                }
-            }
-
-            document.addEventListener('click', function (e) {
-                const sidebar = document.getElementById('sidebar');
-                const toggleBtn = document.querySelector('.sidebar-toggle');
-                const closeBtn = document.querySelector('.sidebar-close');
-                const sidebarContent = document.querySelector('.sidebar-content');
-
-                if (window.innerWidth <= 768) {
-                    if (!sidebarContent.contains(e.target) &&
-                        !toggleBtn.contains(e.target) &&
-                        !closeBtn.contains(e.target)) {
-                        sidebar.classList.remove('active');
-                    }
                 }
             });
-
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    const sidebar = document.getElementById('sidebar');
-                    if (sidebar.classList.contains('active')) {
-                        sidebar.classList.remove('active');
-                    }
-                }
+            window.addEventListener('darkmodechange', () => {
+                this.loadSettings();
             });
+        }
 
-            window.addEventListener('resize', checkScreenSize);
-            document.addEventListener('DOMContentLoaded', checkScreenSize);
+        broadcastChange() {
+            window.dispatchEvent(new Event('darkmodechange'));
+        }
+    }
 
-            // カテゴリ制限の設定
-            const MAX_CATEGORIES = 3;
-            let formSubmissionBlocked = false;
+    function toggleDarkMode() {
+        const checkbox = document.getElementById('darkMode');
+        const isDark = checkbox ? checkbox.checked : !document.body.classList.contains('dark-mode');
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'false');
+        }
+        formDarkModeManager.broadcastChange();
+    }
 
-            // 新しい画像プレビュー処理
-            function handleImagePreview(event) {
-                const file = event.target.files[0];
-                const previewContainer = document.getElementById('preview-container');
-                const previewImage = document.getElementById('image-preview');
+    function toggleCompactView() {
+        const checkbox = document.getElementById('compactView');
+        const isCompact = checkbox ? checkbox.checked : false;
+        localStorage.setItem('compactView', isCompact ? 'true' : 'false');
+    }
 
-                if (file && file.type.startsWith('image/')) {
-                    // ファイルサイズチェック（5MB制限）
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('ファイルサイズが大きすぎます。5MB以下の画像を選択してください。');
-                        event.target.value = '';
-                        previewContainer.style.display = 'none';
-                        return;
-                    }
-
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        previewImage.src = e.target.result;
-                        previewContainer.style.display = 'block';
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file) {
-                    alert('画像ファイルを選択してください（JPEG, PNG, GIF, WebP対応）。');
-                    event.target.value = '';
-                    previewContainer.style.display = 'none';
-                } else {
-                    previewContainer.style.display = 'none';
-                    previewImage.src = '';
-                }
+    function showModal(title, content) {
+        const existingModal = document.getElementById('formModalOverlay');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        const modalHTML = `
+            <div id="formModalOverlay" class="modal-overlay" style="display: flex;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${title}</h3>
+                        <button class="modal-close" onclick="closeFormModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ${content}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="modal-btn" onclick="closeFormModal()">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeFormModal();
+                document.removeEventListener('keydown', escHandler);
             }
+        });
+        document.getElementById('formModalOverlay').addEventListener('click', function(e) {
+            if (e.target.id === 'formModalOverlay') {
+                closeFormModal();
+            }
+        });
+    }
 
-            // 新しく選んだ画像を削除（ファイルインプットをリセット）
-            function removeImagePreview() {
-                const fileInput = document.getElementById('image');
-                const previewContainer = document.getElementById('preview-container');
-                const previewImage = document.getElementById('image-preview');
+    function closeFormModal() {
+        const modal = document.getElementById('formModalOverlay');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }
+    }
 
-                const newInput = fileInput.cloneNode(true);
-                newInput.value = '';
-                newInput.addEventListener('change', handleImagePreview);
-                fileInput.parentNode.replaceChild(newInput, fileInput);
+    function showSettings() {
+        const settingsContent = `
+            <div class="settings-content">
+                <h4>⚙️ 設定</h4>
+                <div class="settings-section">
+                    <h5>🎨 表示設定</h5>
+                    <div class="setting-item">
+                        <span>ダークモード</span>
+                        <label class="switch">
+                            <input type="checkbox" id="darkMode" onchange="toggleDarkMode()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span>コンパクト表示</span>
+                        <label class="switch">
+                            <input type="checkbox" id="compactView" onchange="toggleCompactView()">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h5>ℹ️ アプリ情報</h5>
+                    <p><strong>バージョン:</strong> 1.0.0</p>
+                    <p><strong>最終更新:</strong> 2024年</p>
+                </div>
+            </div>
+        `;
+        showModal('設定', settingsContent);
+        setTimeout(() => {
+            loadSettingsInModal();
+        }, 100);
+    }
 
-                previewImage.src = '';
+    function loadSettingsInModal() {
+        const darkModeCheckbox = document.getElementById('darkMode');
+        const compactViewCheckbox = document.getElementById('compactView');
+        if (darkModeCheckbox) {
+            darkModeCheckbox.checked = localStorage.getItem('darkMode') === 'true';
+        }
+        if (compactViewCheckbox) {
+            compactViewCheckbox.checked = localStorage.getItem('compactView') === 'true';
+        }
+    }
+
+    function showUserInfo() {
+        const userInfo = `
+            <div class="user-stats">
+                <h4>👤 ユーザー情報</h4>
+                <p><strong>現在のページ:</strong> レシピフォーム</p>
+                <p><strong>登録日:</strong> 2024年</p>
+            </div>
+        `;
+        showModal('ユーザー情報', userInfo);
+    }
+
+    function showHelp() {
+        const helpContent = `
+            <div class="help-content">
+                <h4>📖 RecipeAppの使い方</h4>
+                <div class="help-section">
+                    <h5>🆕 レシピの追加</h5>
+                    <p>フォームに必要な情報を入力してレシピを作成できます。</p>
+                </div>
+                <div class="help-section">
+                    <h5>📝 入力のコツ</h5>
+                    <p>材料と手順は詳しく記入すると、後で見返しやすくなります。</p>
+                </div>
+            </div>
+        `;
+        showModal('ヘルプ', helpContent);
+    }
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('active');
+        }
+    }
+
+    const formDarkModeManager = new FormDarkModeManager();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        formDarkModeManager.loadSettings();
+    });
+</script>
+
+<script>
+    // モバイル対応のサイドバー機能
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('active');
+    }
+
+    function checkScreenSize() {
+        const sidebar = document.getElementById('sidebar');
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('active');
+        }
+    }
+
+    document.addEventListener('click', function (e) {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.querySelector('.sidebar-toggle');
+        const closeBtn = document.querySelector('.sidebar-close');
+        const sidebarContent = document.querySelector('.sidebar-content');
+
+        if (window.innerWidth <= 768) {
+            if (!sidebarContent.contains(e.target) &&
+                !toggleBtn.contains(e.target) &&
+                !closeBtn.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+            }
+        }
+    });
+
+    window.addEventListener('resize', checkScreenSize);
+    document.addEventListener('DOMContentLoaded', checkScreenSize);
+
+    // カテゴリ制限の設定
+    const MAX_CATEGORIES = 3;
+    let selectedCategories = new Set();
+    let formSubmissionBlocked = false;
+
+    // 新しい画像プレビュー処理
+    function handleImagePreview(event) {
+        const file = event.target.files[0];
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('image-preview');
+
+        if (file && file.type.startsWith('image/')) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('ファイルサイズが大きすぎます。5MB以下の画像を選択してください。');
+                event.target.value = '';
                 previewContainer.style.display = 'none';
+                return;
             }
 
-            // 既存の画像を削除（編集時）
-            function removeCurrentImage() {
-                const currentImage = document.getElementById('current-image');
-                const currentWrapper = document.getElementById('current-image-wrapper');
-                const deleteInput = document.getElementById('deleteCurrentImage');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else if (file) {
+            alert('画像ファイルを選択してください（JPEG, PNG, GIF, WebP対応）。');
+            event.target.value = '';
+            previewContainer.style.display = 'none';
+        } else {
+            previewContainer.style.display = 'none';
+            previewImage.src = '';
+        }
+    }
 
-                currentWrapper.style.display = 'none';
-                deleteInput.value = 'true';
+    function removeImagePreview() {
+        const fileInput = document.getElementById('image');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('image-preview');
+
+        const newInput = fileInput.cloneNode(true);
+        newInput.value = '';
+        newInput.addEventListener('change', handleImagePreview);
+        fileInput.parentNode.replaceChild(newInput, fileInput);
+
+        previewImage.src = '';
+        previewContainer.style.display = 'none';
+    }
+
+    function removeCurrentImage() {
+        const currentWrapper = document.getElementById('current-image-wrapper');
+        const deleteInput = document.getElementById('deleteCurrentImage');
+        currentWrapper.style.display = 'none';
+        deleteInput.value = 'true';
+    }
+
+    function toggleFavorite(button) {
+        const icon = document.getElementById('favorite-icon');
+        const input = document.getElementById('favorite-input');
+        const isSelected = icon.classList.toggle('selected');
+        input.value = isSelected ? "true" : "false";
+        icon.src = isSelected ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
+    }
+
+    function toggleDropdown() {
+        const options = document.getElementById('category-options');
+        const arrow = document.querySelector('.arrow');
+        const isVisible = options.style.display === 'block';
+        options.style.display = isVisible ? 'none' : 'block';
+        arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    // 隠しフィールドを更新する関数
+    function updateHiddenCategories() {
+        const container = document.getElementById('hidden-categories-container');
+        container.innerHTML = '';
+
+        let index = 0;
+        selectedCategories.forEach(category => {
+            if (index < MAX_CATEGORIES) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'categories';
+                input.value = category;
+                container.appendChild(input);
+                index++;
             }
+        });
+    }
 
-            // お気に入りトグル機能
-            function toggleFavorite(button) {
-                const icon = document.getElementById('favorite-icon');
-                const input = document.getElementById('favorite-input');
-                const isSelected = icon.classList.toggle('selected');
-                input.value = isSelected ? "true" : "false";
-                icon.src = isSelected ? "/images/icons/heart_active.svg" : "/images/icons/heart_off.svg";
-            }
+    // カテゴリ選択状況を更新（改善版）
+    function updateSelectedCategories() {
+        const checkboxes = document.querySelectorAll('#category-options input[type="checkbox"]:checked');
+        const selectedText = document.getElementById('selected-categories');
+        const selectedTags = document.getElementById('selected-tags');
+        const limitMessage = document.getElementById('category-limit-message');
+        const submitBtn = document.getElementById('submit-btn');
+        const allCheckboxes = document.querySelectorAll('#category-options input[type="checkbox"]');
 
-            // カテゴリセレクターの機能
-            function toggleDropdown() {
-                const options = document.getElementById('category-options');
-                const arrow = document.querySelector('.arrow');
-                const isVisible = options.style.display === 'block';
+        // 選択されたカテゴリを収集
+        selectedCategories.clear();
+        checkboxes.forEach(cb => {
+            selectedCategories.add(cb.getAttribute('data-category'));
+        });
 
-                options.style.display = isVisible ? 'none' : 'block';
-                arrow.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
-            }
+        const uniqueCount = selectedCategories.size;
 
-            // カテゴリ選択状況を更新（改善版）
-            function updateSelectedCategories() {
-                const checkboxes = document.querySelectorAll('input[name="categories"]:checked');
-                const selectedText = document.getElementById('selected-categories');
-                const selectedTags = document.getElementById('selected-tags');
-                const limitMessage = document.getElementById('category-limit-message');
-                const submitBtn = document.getElementById('submit-btn');
-                const allCheckboxes = document.querySelectorAll('input[name="categories"]');
+        console.log('カテゴリ更新 - ユニーク数:', uniqueCount);
+        console.log('カテゴリ更新 - 選択内容:', Array.from(selectedCategories));
 
-                // 重複を除去したカテゴリリストを作成
-                const uniqueCategories = new Set();
-                checkboxes.forEach(cb => uniqueCategories.add(cb.value));
-                const uniqueCount = uniqueCategories.size;
+        // 選択状況の表示更新
+        if (uniqueCount === 0) {
+            selectedText.textContent = 'カテゴリを選択してください';
+            selectedTags.innerHTML = '';
+            limitMessage.style.display = 'none';
+            formSubmissionBlocked = false;
+        } else {
+            selectedText.textContent = `${uniqueCount}個のカテゴリを選択中`;
+            selectedTags.innerHTML = '';
 
-                console.log('カテゴリ更新 - 選択数（重複含む）:', checkboxes.length);
-                console.log('カテゴリ更新 - ユニーク数:', uniqueCount);
-                console.log('カテゴリ更新 - 選択内容:', Array.from(uniqueCategories));
+            // 制限チェック
+            if (uniqueCount > MAX_CATEGORIES) {
+                console.log('カテゴリ上限エラー:', uniqueCount, '>', MAX_CATEGORIES);
+                limitMessage.style.display = 'block';
+                limitMessage.textContent = `カテゴリは${MAX_CATEGORIES}つまでしか選択できません。現在${uniqueCount}つ選択されています。`;
+                limitMessage.className = 'category-limit-message error';
+                formSubmissionBlocked = true;
 
-                // 選択状況の表示更新
-                if (uniqueCount === 0) {
-                    selectedText.textContent = 'カテゴリを選択してください';
-                    selectedTags.innerHTML = '';
-                    limitMessage.style.display = 'none';
-                    formSubmissionBlocked = false;
-                } else {
-                    selectedText.textContent = `${uniqueCount}個のカテゴリを選択中`;
-                    selectedTags.innerHTML = '';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                submitBtn.style.cursor = 'not-allowed';
+                submitBtn.title = 'カテゴリの選択数を減らしてください';
 
-                    // 制限チェック（重複を除いたユニーク数で判定）
-                    if (uniqueCount > MAX_CATEGORIES) {
-                        console.log('カテゴリ上限エラー:', uniqueCount, '>', MAX_CATEGORIES);
-                        limitMessage.style.display = 'block';
-                        limitMessage.textContent = `カテゴリは${MAX_CATEGORIES}つまでしか選択できません。現在${uniqueCount}つ選択されています。`;
-                        limitMessage.className = 'category-limit-message error';
-                        formSubmissionBlocked = true;
-
-                        // 送信ボタンを無効化
-                        submitBtn.disabled = true;
-                        submitBtn.style.opacity = '0.6';
-                        submitBtn.style.cursor = 'not-allowed';
-                        submitBtn.title = 'カテゴリの選択数を減らしてください';
-
-                        // 未選択のチェックボックスを無効化
-                        allCheckboxes.forEach(checkbox => {
-                            if (!checkbox.checked) {
-                                checkbox.disabled = true;
-                                checkbox.parentElement.classList.add('disabled');
-                            } else {
-                                checkbox.disabled = false;
-                                checkbox.parentElement.classList.remove('disabled');
-                            }
-                        });
-                    } else if (uniqueCount === MAX_CATEGORIES) {
-                        limitMessage.style.display = 'block';
-                        limitMessage.textContent = `カテゴリを${MAX_CATEGORIES}つ選択しました（上限）`;
-                        limitMessage.className = 'category-limit-message';
-                        formSubmissionBlocked = false;
-
-                        // 送信ボタンを有効化
-                        submitBtn.disabled = false;
-                        submitBtn.style.opacity = '1';
-                        submitBtn.style.cursor = 'pointer';
-                        submitBtn.title = '';
-
-                        // 未選択のチェックボックスを無効化
-                        allCheckboxes.forEach(checkbox => {
-                            if (!checkbox.checked) {
-                                checkbox.disabled = true;
-                                checkbox.parentElement.classList.add('disabled');
-                            } else {
-                                checkbox.disabled = false;
-                                checkbox.parentElement.classList.remove('disabled');
-                            }
-                        });
+                allCheckboxes.forEach(checkbox => {
+                    if (!checkbox.checked) {
+                        checkbox.disabled = true;
+                        checkbox.parentElement.classList.add('disabled');
                     } else {
-                        limitMessage.style.display = 'none';
-                        formSubmissionBlocked = false;
-
-                        // 送信ボタンを有効化
-                        submitBtn.disabled = false;
-                        submitBtn.style.opacity = '1';
-                        submitBtn.style.cursor = 'pointer';
-                        submitBtn.title = '';
-
-                        // 全チェックボックスを有効化
-                        allCheckboxes.forEach(checkbox => {
-                            checkbox.disabled = false;
-                            checkbox.parentElement.classList.remove('disabled');
-                        });
+                        checkbox.disabled = false;
+                        checkbox.parentElement.classList.remove('disabled');
                     }
+                });
+            } else if (uniqueCount === MAX_CATEGORIES) {
+                limitMessage.style.display = 'block';
+                limitMessage.textContent = `カテゴリを${MAX_CATEGORIES}つ選択しました（上限）`;
+                limitMessage.className = 'category-limit-message';
+                formSubmissionBlocked = false;
 
-                    // 選択されたタグの表示（重複なし）
-                    uniqueCategories.forEach(category => {
-                        const tag = document.createElement('span');
-                        tag.className = `category-tag ${category}`;
-                        tag.textContent = category;
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.title = '';
 
-                        const removeBtn = document.createElement('span');
-                        removeBtn.className = 'remove-tag';
-                        removeBtn.textContent = '×';
-                        removeBtn.onclick = () => {
-                            // 同じvalueを持つ全てのチェックボックスのチェックを外す
-                            document.querySelectorAll(`input[name="categories"][value="${category}"]`).forEach(cb => {
-                                cb.checked = false;
-                            });
-                            updateSelectedCategories();
-                        };
+                allCheckboxes.forEach(checkbox => {
+                    if (!checkbox.checked) {
+                        checkbox.disabled = true;
+                        checkbox.parentElement.classList.add('disabled');
+                    } else {
+                        checkbox.disabled = false;
+                        checkbox.parentElement.classList.remove('disabled');
+                    }
+                });
+            } else {
+                limitMessage.style.display = 'none';
+                formSubmissionBlocked = false;
 
-                        tag.appendChild(removeBtn);
-                        selectedTags.appendChild(tag);
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.title = '';
+
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = false;
+                    checkbox.parentElement.classList.remove('disabled');
+                });
+            }
+
+            // 選択されたタグの表示
+            selectedCategories.forEach(category => {
+                const tag = document.createElement('span');
+                tag.className = `category-tag ${category}`;
+                tag.textContent = category;
+
+                const removeBtn = document.createElement('span');
+                removeBtn.className = 'remove-tag';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = () => {
+                    document.querySelectorAll(`#category-options input[data-category="${category}"]`).forEach(cb => {
+                        cb.checked = false;
                     });
-                }
-            }
+                    updateSelectedCategories();
+                };
 
-            // カテゴリチェックボックスのchange処理
-            function handleCategoryChange(event) {
-                console.log('カテゴリ変更:', event.target.value, event.target.checked);
-                updateSelectedCategories();
-            }
-
-            // フォーム送信前のバリデーション（改善版）
-            function validateForm(event) {
-                const titleInput = document.getElementById('title');
-                const checkedBoxes = document.querySelectorAll('input[name="categories"]:checked');
-
-                // 重複を除去したカテゴリ数を計算
-                const uniqueCategories = new Set();
-                checkedBoxes.forEach(cb => uniqueCategories.add(cb.value));
-                const uniqueCount = uniqueCategories.size;
-
-                // タイトルの必須チェック
-                if (!titleInput.value.trim()) {
-                    event.preventDefault();
-                    alert('タイトルは必須です。');
-                    titleInput.focus();
-                    return false;
-                }
-
-                // カテゴリ数チェック（重複を除いたユニーク数で判定）
-                if (uniqueCount > MAX_CATEGORIES) {
-                    event.preventDefault();
-                    console.log('フォーム送信阻止 - ユニークカテゴリ数:', uniqueCount);
-                    alert(`カテゴリが${uniqueCount}つ選択されているため登録できません。カテゴリは${MAX_CATEGORIES}つまでしか選択できません。`);
-                    return false;
-                }
-
-                // 送信ブロックフラグチェック
-                if (formSubmissionBlocked) {
-                    event.preventDefault();
-                    alert('カテゴリの選択数が上限を超えています。選択を減らしてください。');
-                    return false;
-                }
-
-                // 送信前に最終確認
-                console.log('フォーム送信許可 - ユニークカテゴリ数:', uniqueCount);
-                return true;
-            }
-
-            // ページロード時の初期化
-            document.addEventListener("DOMContentLoaded", () => {
-                // お気に入りアイコンの初期化
-                const icon = document.getElementById("favorite-icon");
-                const input = document.getElementById("favorite-input");
-                if (icon && input) {
-                    icon.src = input.value === "true"
-                        ? "/images/icons/heart_active.svg"
-                        : "/images/icons/heart_off.svg";
-                    if (input.value === "true") {
-                        icon.classList.add("selected");
-                    }
-                }
-
-                // 画像プレビュー機能の初期化
-                const imageInput = document.getElementById('image');
-                if (imageInput) {
-                    imageInput.addEventListener('change', handleImagePreview);
-                }
-
-                // カテゴリチェックボックスのイベントリスナー
-                const categoryCheckboxes = document.querySelectorAll('input[name="categories"]');
-                categoryCheckboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', handleCategoryChange);
-                });
-
-                // フォーム送信時のバリデーション
-                const form = document.getElementById('recipe-form');
-                if (form) {
-                    form.addEventListener('submit', validateForm);
-                }
-
-                // 初期状態の表示更新
-                updateSelectedCategories();
-
-                // ドロップダウン外クリックで閉じる
-                document.addEventListener('click', (e) => {
-                    const categorySelector = document.querySelector('.category-selector');
-                    const options = document.getElementById('category-options');
-                    const arrow = document.querySelector('.arrow');
-
-                    if (!categorySelector.contains(e.target)) {
-                        options.style.display = 'none';
-                        arrow.style.transform = 'rotate(0deg)';
-                    }
-                });
-
-                // Enter キーでドロップダウンをトグル
-                const selectTrigger = document.querySelector('.select-trigger');
-                if (selectTrigger) {
-                    selectTrigger.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            toggleDropdown();
-                        }
-                    });
-                }
-
-                // フラッシュメッセージの自動非表示
-                const flashMessages = document.querySelectorAll('.flash-message');
-                flashMessages.forEach(message => {
-                    setTimeout(() => {
-                        message.style.opacity = '0';
-                        message.style.transform = 'translateY(-10px)';
-                        setTimeout(() => {
-                            if (message.parentNode) {
-                                message.parentNode.removeChild(message);
-                            }
-                        }, 300);
-                    }, 5000); // 5秒後に非表示
-                });
-
-                console.log('フォーム初期化完了');
+                tag.appendChild(removeBtn);
+                selectedTags.appendChild(tag);
             });
-        </script>
+        }
 
+        // 隠しフィールドを更新
+        updateHiddenCategories();
+    }
+
+    // カテゴリチェックボックスのchange処理
+    function handleCategoryChange(event) {
+        console.log('カテゴリ変更:', event.target.getAttribute('data-category'), event.target.checked);
+        updateSelectedCategories();
+    }
+
+    // フォーム送信前のバリデーション
+    function validateForm(event) {
+        const titleInput = document.getElementById('title');
+        const uniqueCount = selectedCategories.size;
+
+        // デバッグ用ログ
+        console.log('フォーム送信前チェック:');
+        console.log('- タイトル:', titleInput.value);
+        console.log('- 選択カテゴリ数:', uniqueCount);
+        console.log('- 選択カテゴリ内容:', Array.from(selectedCategories));
+
+        // 隠しフィールドの確認
+        const hiddenInputs = document.querySelectorAll('#hidden-categories-container input[type="hidden"]');
+        console.log('- 隠しフィールド数:', hiddenInputs.length);
+        hiddenInputs.forEach((input, index) => {
+            console.log(`  ${index + 1}. name="${input.name}", value="${input.value}"`);
+        });
+
+        if (!titleInput.value.trim()) {
+            event.preventDefault();
+            alert('タイトルは必須です。');
+            titleInput.focus();
+            return false;
+        }
+
+        if (uniqueCount > MAX_CATEGORIES) {
+            event.preventDefault();
+            console.log('フォーム送信阻止 - ユニークカテゴリ数:', uniqueCount);
+            alert(`カテゴリが${uniqueCount}つ選択されているため登録できません。カテゴリは${MAX_CATEGORIES}つまでしか選択できません。`);
+            return false;
+        }
+
+        if (formSubmissionBlocked) {
+            event.preventDefault();
+            alert('カテゴリの選択数が上限を超えています。選択を減らしてください。');
+            return false;
+        }
+
+        console.log('フォーム送信許可 - ユニークカテゴリ数:', uniqueCount);
+
+        // 最終確認：隠しフィールドが正しく設定されているか
+        updateHiddenCategories();
+
+        return true;
+    }
+
+    // 新しい送信方法：FormDataを正しく構築して送信
+    function submitFormAsJson(event) {
+        event.preventDefault();
+
+        // バリデーション
+        if (!validateForm(event)) {
+            return;
+        }
+
+        const form = document.getElementById('recipe-form');
+        const formData = new FormData();
+
+        // 基本フィールドを追加
+        formData.append('title', document.getElementById('title').value);
+        formData.append('ingredients', document.getElementById('ingredients').value || '');
+        formData.append('instructions', document.getElementById('instructions').value || '');
+        formData.append('favorite', document.getElementById('favorite-input').value);
+        formData.append('reference', document.getElementById('reference').value || '');
+
+        // IDがある場合（編集時）
+        const idInput = document.querySelector('input[name="id"]');
+        if (idInput) {
+            formData.append('id', idInput.value);
+        }
+
+        // カテゴリを個別に追加（最大3つ）
+        let categoryIndex = 0;
+        selectedCategories.forEach(category => {
+            if (categoryIndex < MAX_CATEGORIES) {
+                formData.append('categories', category);
+                categoryIndex++;
+            }
+        });
+
+        // 画像ファイル
+        const imageInput = document.getElementById('image');
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            formData.append('image', imageInput.files[0]);
+        }
+
+        // 画像削除フラグ
+        const deleteImageInput = document.getElementById('deleteCurrentImage');
+        if (deleteImageInput) {
+            formData.append('deleteCurrentImage', deleteImageInput.value);
+        }
+
+        // 送信処理
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = '送信中...';
+
+        // フォームを通常の方法で送信
+        form.submit();
+    }
+
+    // ページロード時の初期化
+    document.addEventListener("DOMContentLoaded", () => {
+        // お気に入りアイコンの初期化
+        const icon = document.getElementById("favorite-icon");
+        const input = document.getElementById("favorite-input");
+        if (icon && input) {
+            icon.src = input.value === "true"
+                ? "/images/icons/heart_active.svg"
+                : "/images/icons/heart_off.svg";
+            if (input.value === "true") {
+                icon.classList.add("selected");
+            }
+        }
+
+        // 画像プレビュー機能の初期化
+        const imageInput = document.getElementById('image');
+        if (imageInput) {
+            imageInput.addEventListener('change', handleImagePreview);
+        }
+
+        // 既存のカテゴリを selectedCategories に追加（編集時）
+        const checkedBoxes = document.querySelectorAll('#category-options input[type="checkbox"]:checked');
+        checkedBoxes.forEach(checkbox => {
+            const category = checkbox.getAttribute('data-category');
+            if (category) {
+                selectedCategories.add(category);
+            }
+        });
+        console.log('初期カテゴリ:', Array.from(selectedCategories));
+
+        // カテゴリチェックボックスのイベントリスナー（data-category属性を使用）
+        const categoryCheckboxes = document.querySelectorAll('#category-options input[type="checkbox"]');
+        categoryCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleCategoryChange);
+        });
+
+        // フォーム送信時のバリデーション
+        const form = document.getElementById('recipe-form');
+        if (form) {
+            form.addEventListener('submit', validateForm);
+        }
+
+        // 初期状態の表示更新（隠しフィールドも作成）
+        updateSelectedCategories();
+
+        // ドロップダウン外クリックで閉じる
+        document.addEventListener('click', (e) => {
+            const categorySelector = document.querySelector('.category-selector');
+            const options = document.getElementById('category-options');
+            const arrow = document.querySelector('.arrow');
+
+            if (!categorySelector.contains(e.target)) {
+                options.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Enter キーでドロップダウンをトグル
+        const selectTrigger = document.querySelector('.select-trigger');
+        if (selectTrigger) {
+            selectTrigger.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleDropdown();
+                }
+            });
+        }
+
+        // フラッシュメッセージの自動非表示
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(message => {
+            setTimeout(() => {
+                message.style.opacity = '0';
+                message.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    if (message.parentNode) {
+                        message.parentNode.removeChild(message);
+                    }
+                }, 300);
+            }, 5000); // 5秒後に非表示
+        });
+
+        console.log('フォーム初期化完了');
+    });
+</script>
+<script src="/assets/js/sidebar-active.js"></script>
 </body>
 </html>
-<div class="header-right">
-    <!-- ヘッダー右側 -->
-    <div class="user-info" sec:authorize="isAuthenticated()">
-        <span th:text="'ようこそ、' + ${#authentication.name} + 'さん'">ユーザー名</span>
-    </div>
-    <div class="header-actions" sec:authorize="isAuthenticated()">
-        <form th:action="@{/logout}" method="post" style="display:inline;">
-            <button type="submit" class="logout-btn">ログアウト</button>
-        </form>
-    </div>
-</div>
-</header>
-
-<!-- Sidebar -->
-<nav class="sidebar" id="sidebar">
-    <div class="sidebar-content">
-        <div class="sidebar-header">
-            <button class="sidebar-close" onclick="toggleSidebar()" aria-label="メニューを閉じる">
-                ✕
-            </button>
-        </div>
-        <ul>
-            <li>
-                <a href="/home" class="home-button">
-                    <img src="/images/icons/home.svg" alt="ホーム" />
-                    <span>ホーム</span>
-                </a>
-            </li>
-            <li>
-                <a href="/home">
-                    <img src="/images/icons/book.svg" alt="レシピ一覧" />
-                    <span>レシピ一覧</span>
-                </a>
-            </li>
-            <li>
-                <a href="/recipes/favorites">
-                    <img src="/images/icons/heart.svg" alt="お気に入り">
-                    <span>お気に入り</span>
-                </a>
-            </li>
-            <li>
-                <a href="/home">
-                    <img src="/images/icons/category.svg" alt="カテゴリ一覧" />
-                    <span>カテゴリ一覧</span>
-                </a>
-            </li>
-            <li>
-                <div class="menu-item" onclick="showUserInfo()">
-                    <img src="/images/icons/user.svg" alt="ユーザー情報" />
-                    <span>ユーザー情報</span>
-                </div>
-            </li>
-            <li>
-                <div class="menu-item" onclick="showHelp()">
-                    <img src="/images/icons/interrogation.svg" alt="ヘルプ" />
-                    <span>ヘルプ</span>
-                </div>
-            </li>
-            <li class="bottom">
-                <div class="menu-item" onclick="showSettings()">
-                    <img src="/images/icons/settings.svg" alt="設定" />
-                    <span>設定</span>
-                </div>
-            </li>
-            <li class="bottom" sec:authorize="isAuthenticated()">
-                <form th:action="@{/logout}" method="post" style="margin:0;">
-                    <button type="submit" class="logout-sidebar-btn">
-                        <img src="/images/icons/logout.svg" alt="ログアウト" />
-                        <span>ログアウト</span>
-                    </button>
-                </form>
-            </li>
-        </ul>
-    </div>
-</nav>
-
-<main class="main-content">
-    <div class="section-header">
-        <div class="section-title">
-            <h1 th:text="${recipe.id} != null ? 'レシピを編集' : 'レシピを追加'">レシピを追加</h1>
-        </div>
-        <div class="add-button-container">
-            <a href="/home" class="add-button back-button">
-                <span class="add-text">戻る</span>
-                <img src="/images/icons/back.svg" alt="戻る">
-            </a>
-        </div>
-    </div>
-
-    <div class="form-container">
-        <!-- お気に入りボタンを右上に配置（修正版） -->
-        <button type="button" class="favorite-toggle favorite-top-right" onclick="toggleFavorite(this)" aria-label="お気に入りに追加">
-            <img id="favorite-icon"
-                 th:src="${recipe.favorite} ? '/images/icons/heart_active.svg' : '/images/icons/heart_off.svg'"
-                 th:classappend="${recipe.favorite} ? ' selected' : ''"
-                 alt="お気に入り"
-                 class="heart-image">
-        </button>
-
-        <!-- フラッシュメッセージ表示 -->
-        <div th:if="${successMessage}" class="flash-message success-message">
-            <span th:text="${successMessage}"></span>
-        </div>
-        <div th:if="${warningMessage}" class="flash-message warning-message">
-            <span th:text="${warningMessage}"></span>
-        </div>
-        <div th:if="${errorMessage}" class="flash-message error-message">
-            <span th:text="${errorMessage}"></span>
-        </div>
-
-        <form th:action="@{${recipe.id} != null ? '/recipes/update' : '/recipes/new'}" th:object="${recipe}" method="post" enctype="multipart/form-data" id="recipe-form">
-            <!-- ID（編集時のみ） -->
-            <input type="hidden" th:if="${recipe.id}" th:name="id" th:value="${recipe.id}" />
-
-            <!-- お気に入りの値を保持する隠しフィールド -->
-            <input type="hidden" th:name="favorite" th:value="${recipe.favorite}" id="favorite-input" />
-
-            <div class="form-group">
-                <label for="title">タイトル <span style="color: red;">*</span></label>
-                <input type="text" id="title" th:name="title" th:value="${recipe.title}" required maxlength="100">
-            </div>
-
-            <div class="form-group">
-                <label for="image">レシピ画像</label>
-                <div class="file-input-wrapper">
-                    <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
-                    📷 画像を選択
-                </div>
-
-                <!-- 編集時の既存画像表示と削除 -->
-                <div th:if="${recipe.imagePath}" class="image-preview-container" id="current-image-wrapper">
-                    <span class="current-image-label">現在の画像:</span>
-                    <img th:src="@{${recipe.imagePath}}" alt="現在の画像" class="image-preview" id="current-image" />
-                    <button type="button" class="image-remove" onclick="removeCurrentImage()">×</button>
-                    <input type="hidden" name="deleteCurrentImage" id="deleteCurrentImage" value="false" />
-                </div>
-
-                <!-- 新しい画像のプレビュー -->
-                <div class="image-preview-container" id="preview-container" style="display: none;">
-                    <span class="current-image-label">選択した画像:</span>
-                    <img id="image-preview" class="image-preview" alt="画像プレビュー" />
-                    <button type="button" class="image-remove" onclick="removeImagePreview()">×</button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="ingredients">材料</label>
-                <textarea id="ingredients" th:name="ingredients" th:text="${recipe.ingredients}" placeholder="例：&#10;・玉ねぎ 1個&#10;・にんじん 1本&#10;・じゃがいも 2個"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="instructions">作り方</label>
-                <textarea id="instructions" th:name="instructions" th:text="${recipe.instructions}" placeholder="例：&#10;1. 玉ねぎを薄切りにする&#10;2. フライパンで炒める&#10;3. 塩胡椒で味付けする"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="reference">参考動画・サイト（URL）</label>
-                <input type="url" id="reference" th:name="reference" th:value="${recipe.reference}" placeholder="https://example.com">
-            </div>
-
-            <div class="form-group">
-                <label for="category-select">カテゴリ（最大3つまで選択可）</label>
-                <div class="category-selector">
-                    <div class="custom-select">
-                        <div class="select-trigger" onclick="toggleDropdown()" tabindex="0">
-                            <span id="selected-categories">カテゴリを選択してください</span>
-                            <span class="arrow">▼</span>
-                        </div>
-                        <div class="select-options" id="category-options">
-                            <label class="option"><input type="checkbox" name="categories" value="和食" th:checked="${recipe.categories != null and recipe.categories.contains('和食')}"> 和食</label>
-                            <label class="option"><input type="checkbox" name="categories" value="洋食" th:checked="${recipe.categories != null and recipe.categories.contains('洋食')}"> 洋食</label>
-                            <label class="option"><input type="checkbox" name="categories" value="中華" th:checked="${recipe.categories != null and recipe.categories.contains('中華')}"> 中華</label>
-                            <label class="option"><input type="checkbox" name="categories" value="麺類" th:checked="${recipe.categories != null and recipe.categories.contains('麺類')}"> 麺類</label>
-                            <label class="option"><input type="checkbox" name="categories" value="スープ" th:checked="${recipe.categories != null and recipe.categories.contains('スープ')}"> スープ</label>
-                            <label class="option"><input type="checkbox" name="categories" value="サラダ" th:checked="${recipe.categories != null and recipe.categories.contains('サラダ')}"> サラダ</label>
-                            <label class="option"><input type="checkbox" name="categories" value="おつまみ" th:checked="${recipe.categories != null and recipe.categories.contains('おつまみ')}"> おつまみ</label>
-                            <label class="option"><input type="checkbox" name="categories" value="デザート" th:checked="${recipe.categories != null and recipe.categories.contains('デザート')}"> デザート</label>
-                            <label class="option"><input type="checkbox" name="categories" value="時短" th:checked="${recipe.categories != null and recipe.categories.contains('時短')}"> 時短</label>
-                            <label class="option"><input type="checkbox" name="categories" value="ヘルシー" th:checked="${recipe.categories != null and recipe.categories.contains('ヘルシー')}"> ヘルシー</label>
-                            <label class="option"><input type="checkbox" name="categories" value="その他" th:checked="${recipe.categories != null and recipe.categories.contains('その他')}"> その他</label>
-                        </div>
-                    </div>
-                    <!-- カテゴリ制限メッセージ -->
-                    <div id="category-limit-message" class="category-limit-message" style="display: none;">
-                        カテゴリの選択は3つまでです。
-                    </div>
-                    <div class="selected-tags" id="selected-tags"></div>
-                </div>
-            </div>
-
-            <div class="button-wrapper">
-                <button type="submit" class="submit-button" th:text="${recipe.id} != null ? '更新' : '登録'" id="submit-btn">登録</button>
-            </div>
-        </form>
-    </div>
-</main>
-</div>

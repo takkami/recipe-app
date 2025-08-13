@@ -95,12 +95,12 @@ public class RecipeController {
     // レシピを新規登録（改善版）
     @PostMapping("/recipes/new")
     public String submitRecipe(@RequestParam String title,
-                               @RequestParam String ingredients,
-                               @RequestParam String instructions,
+                               @RequestParam(required = false, defaultValue = "") String ingredients,
+                               @RequestParam(required = false, defaultValue = "") String instructions,
                                @RequestParam(name = "favorite", defaultValue = "false") boolean favorite,
                                @RequestParam(required = false) String reference,
                                @RequestParam(value = "categories", required = false) List<String> categories,
-                               @RequestParam("image") MultipartFile imageFile,
+                               @RequestParam(name = "image", required = false) MultipartFile imageFile,
                                RedirectAttributes redirectAttributes) throws IOException {
 
         System.out.println("新規登録 - 受信したカテゴリ（生データ）: " + categories);
@@ -127,8 +127,8 @@ public class RecipeController {
 
         Recipe recipe = new Recipe();
         recipe.setTitle(title.trim());
-        recipe.setIngredients(ingredients);
-        recipe.setInstructions(instructions);
+        recipe.setIngredients(ingredients != null ? ingredients : "");
+        recipe.setInstructions(instructions != null ? instructions : "");
         recipe.setCategories(validationResult.categories);
         recipe.setFavorite(favorite);
         recipe.setReference(reference);
@@ -174,91 +174,98 @@ public class RecipeController {
     @PostMapping("/recipes/update")
     public String updateRecipe(@RequestParam Long id,
                                @RequestParam String title,
-                               @RequestParam String ingredients,
-                               @RequestParam String instructions,
+                               @RequestParam(required = false, defaultValue = "") String ingredients,
+                               @RequestParam(required = false, defaultValue = "") String instructions,
                                @RequestParam(name = "favorite", defaultValue = "false") boolean favorite,
                                @RequestParam(required = false) String reference,
                                @RequestParam(value = "categories", required = false) List<String> categories,
-                               @RequestParam("image") MultipartFile imageFile,
+                               @RequestParam(name = "image", required = false) MultipartFile image,
                                @RequestParam(name = "deleteCurrentImage", defaultValue = "false") boolean deleteCurrentImage,
                                RedirectAttributes redirectAttributes
-    ) throws IOException {
+    ) {
 
-        System.out.println("更新 - 受信したカテゴリ（生データ）: " + categories);
-
-        // 入力値の基本バリデーション
-        if (title == null || title.trim().isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "タイトルは必須です。");
-            return "redirect:/recipes/edit/" + id;
-        }
-
-        // カテゴリの重複を除去してからバリデーション
-        List<String> processedCategories = null;
-        if (categories != null) {
-            // 重複を除去したリストを作成
-            processedCategories = new ArrayList<>(new HashSet<>(categories));
-        }
-
-        ValidationResult validationResult = validateCategories(processedCategories);
-        if (!validationResult.isValid) {
-            redirectAttributes.addFlashAttribute("errorMessage", validationResult.errorMessage);
-            return "redirect:/recipes/edit/" + id;
-        }
-
-        Recipe existingRecipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid recipe ID: " + id));
-
-        existingRecipe.setTitle(title.trim());
-        existingRecipe.setIngredients(ingredients);
-        existingRecipe.setInstructions(instructions);
-        existingRecipe.setFavorite(favorite);
-        existingRecipe.setReference(reference);
-
-        // カテゴリをクリアしてから新しいカテゴリを設定
-        existingRecipe.clearCategories();
-        existingRecipe.setCategories(validationResult.categories);
-
-        System.out.println("更新 - 設定されたカテゴリ: " + validationResult.categories);
-
-        Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
-        Files.createDirectories(uploadPath);
-
-        // 画像アップロード or 画像削除
-        if (imageFile != null && !imageFile.isEmpty()) {
-            // 古い画像があれば削除
-            if (existingRecipe.getImagePath() != null) {
-                Path oldPath = uploadPath.resolve(Paths.get(existingRecipe.getImagePath()).getFileName());
-                Files.deleteIfExists(oldPath);
-            }
-
-            // 新しい画像を保存
-            String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-            Path filePath = uploadPath.resolve(fileName);
-            imageFile.transferTo(filePath.toFile());
-
-            existingRecipe.setImagePath("/uploads/" + fileName);
-        } else if (deleteCurrentImage) {
-            // 新しい画像が無く、削除フラグが立っている場合
-            if (existingRecipe.getImagePath() != null) {
-                Path oldPath = uploadPath.resolve(Paths.get(existingRecipe.getImagePath()).getFileName());
-                Files.deleteIfExists(oldPath);
-            }
-            existingRecipe.setImagePath(null);
-        }
+        System.out.println("===== レシピ更新処理開始 =====");
+        System.out.println("更新対象ID: " + id);
+        System.out.println("タイトル: " + title);
+        System.out.println("受信したカテゴリ（生データ）: " + categories);
 
         try {
+            // 入力値の基本バリデーション
+            if (title == null || title.trim().isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "タイトルは必須です。");
+                return "redirect:/recipes/edit/" + id;
+            }
+
+            // カテゴリの重複を除去してからバリデーション
+            List<String> processedCategories = null;
+            if (categories != null) {
+                // 重複を除去したリストを作成
+                processedCategories = new ArrayList<>(new HashSet<>(categories));
+            }
+
+            ValidationResult validationResult = validateCategories(processedCategories);
+            if (!validationResult.isValid) {
+                redirectAttributes.addFlashAttribute("errorMessage", validationResult.errorMessage);
+                return "redirect:/recipes/edit/" + id;
+            }
+
+            Recipe existingRecipe = recipeRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid recipe ID: " + id));
+
+            existingRecipe.setTitle(title.trim());
+            existingRecipe.setIngredients(ingredients != null ? ingredients : "");
+            existingRecipe.setInstructions(instructions != null ? instructions : "");
+            existingRecipe.setFavorite(favorite);
+            existingRecipe.setReference(reference);
+
+            // カテゴリをクリアしてから新しいカテゴリを設定
+            existingRecipe.clearCategories();
+            existingRecipe.setCategories(validationResult.categories);
+
+            System.out.println("更新 - 設定されたカテゴリ: " + validationResult.categories);
+
+            // 画像処理
+            if (image != null && !image.isEmpty()) {
+                Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+                Files.createDirectories(uploadPath);
+
+                // 古い画像があれば削除
+                if (existingRecipe.getImagePath() != null) {
+                    Path oldPath = uploadPath.resolve(Paths.get(existingRecipe.getImagePath()).getFileName());
+                    Files.deleteIfExists(oldPath);
+                }
+
+                // 新しい画像を保存
+                String fileName = System.currentTimeMillis() + "_" + image.getOriginalFilename();
+                Path filePath = uploadPath.resolve(fileName);
+                image.transferTo(filePath.toFile());
+
+                existingRecipe.setImagePath("/uploads/" + fileName);
+            } else if (deleteCurrentImage) {
+                // 画像削除フラグが立っている場合
+                if (existingRecipe.getImagePath() != null) {
+                    Path uploadPath = Paths.get(System.getProperty("user.dir"), "uploads");
+                    Path oldPath = uploadPath.resolve(Paths.get(existingRecipe.getImagePath()).getFileName());
+                    Files.deleteIfExists(oldPath);
+                }
+                existingRecipe.setImagePath(null);
+            }
+
             Recipe savedRecipe = recipeRepository.save(existingRecipe);
             System.out.println("更新されたレシピID: " + savedRecipe.getId());
             System.out.println("更新されたカテゴリ: " + savedRecipe.getCategories());
+            System.out.println("===== レシピ更新処理完了 =====");
+
             redirectAttributes.addFlashAttribute("successMessage", "レシピが正常に更新されました。");
+            return "redirect:/home?loading=true";
+
         } catch (Exception e) {
-            System.err.println("レシピ更新エラー: " + e.getMessage());
+            System.err.println("===== レシピ更新エラー =====");
+            System.err.println("エラーメッセージ: " + e.getMessage());
             e.printStackTrace();
-            redirectAttributes.addFlashAttribute("errorMessage", "レシピの更新に失敗しました。");
+            redirectAttributes.addFlashAttribute("errorMessage", "レシピの更新に失敗しました: " + e.getMessage());
             return "redirect:/recipes/edit/" + id;
         }
-
-        return "redirect:/home?loading=true";
     }
 
     // レシピ削除処理（フォームからのPOST - 既存のページ遷移用）

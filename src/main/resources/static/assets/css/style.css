@@ -210,9 +210,14 @@ a:active {
   transition: border-color 0.3s ease;
 }
 
-.search-bar:hover,
-.search-bar:focus-within {
+.search-bar:hover {
   border-color: #6A994E;
+}
+
+/* 検索バーの内側の緑の線（focus時のborder）を削除 */
+.search-bar:focus-within {
+  border-color: #ccc; /* 元の色のまま維持 */
+  outline: none; /* アウトラインも削除 */
 }
 
 .search-bar input {
@@ -222,6 +227,11 @@ a:active {
   background: transparent;
   font-size: 14px;
   min-width: 0;
+}
+
+.search-bar input:focus {
+  outline: none; /* inputのアウトラインを削除 */
+  border: none; /* inputのボーダーを削除（元々透明） */
 }
 
 .search-icon img {
@@ -444,8 +454,27 @@ a.back-button:hover {
   white-space: nowrap; /* テキストの改行を防ぐ */
 }
 
+/* サイドバーのアクティブ状態とホバー状態の改善 */
+.sidebar ul li.active {
+  background-color: #6A994E;
+  color: white;
+}
+
+.sidebar ul li.active a,
+.sidebar ul li.active .menu-item,
+.sidebar ul li.active .menu-item span,
+.sidebar ul li.active a span {
+  color: white !important;
+}
+
+.sidebar ul li.active:hover {
+  background-color: #588640; /* より濃い緑 */
+  transform: translateX(2px);
+}
+
+/* 通常のホバー状態の改善 */
 .sidebar ul li:hover {
-  background-color: #D8EAD2;
+  background-color: #E8F5E8; /* より薄い緑色 */
   transform: translateX(2px);
 }
 
@@ -1814,8 +1843,25 @@ input:checked + .slider:before {
   color: #e0e0e0;
 }
 
+/* ダークモード対応 */
 .dark-mode .sidebar ul li:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(118, 200, 147, 0.2); /* ダークモード用の薄い緑 */
+}
+
+.dark-mode .sidebar ul li.active {
+  background-color: #76C893; /* ダークモード用のアクティブ色 */
+  color: #e0e0e0;
+}
+
+.dark-mode .sidebar ul li.active a,
+.dark-mode .sidebar ul li.active .menu-item,
+.dark-mode .sidebar ul li.active .menu-item span,
+.dark-mode .sidebar ul li.active a span {
+  color: #e0e0e0;
+}
+
+.dark-mode .sidebar ul li.active:hover {
+  background-color: #5fb378; /* ダークモード用のアクティブホバー色 */
 }
 
 /* サイドバーメニューアイテムの文字色 */
@@ -2065,8 +2111,6 @@ input:checked + .slider:before {
 .dark-mode .back-button {
   background-color: #76C893;
 }
-
-
 
 .dark-mode .back-button:hover {
   background-color: #5fb378;
@@ -2350,741 +2394,6 @@ input:checked + .slider:before {
   }
 }
 
-/* 極小画面（360px以下） */
-@media (max-width: 360px) {
-  .title {
-    font-size: 16px;
-  }
-
-  .main-content {
-    padding: 12px 8px;
-  }
-
-  .main-toolbar {
-    gap: 6px;
-  }
-
-  .search-bar {
-    min-width: 150px;
-  }
-
-  .card-list {
-    gap: 8px;
-  }
-
-  .section-header {
-    gap: 8px;
-  }
-
-  .form-container h1 {
-    padding-right: 40px;
-  }
-
-  .favorite-top-right {
-    top: 6px;
-    right: 6px;
-    width: 30px;
-    height: 30px;
-  }
-
-  .favorite-top-right .heart-image {
-    width: 26px;
-    height: 26px;
-  }
-}
-
-/* アクセシビリティの向上 */
-.modal-overlay:focus-within .modal-content {
-  outline: 2px solid #6A994E;
-  outline-offset: 2px;
-}
-
-.setting-item input[type="checkbox"]:focus {
-  outline: 2px solid #6A994E;
-  outline-offset: 2px;
-}
-
-.settings-btn:focus,
-.modal-btn:focus {
-  outline: 2px solid #6A994E;
-  outline-offset: 2px;
-}
-
-/* 高コントラストモードでの対応 */
-@media (prefers-contrast: high) {
-  .modal-content {
-    border: 2px solid #000;
-  }
-
-  .settings-btn,
-  .modal-btn {
-    border: 2px solid #000;
-  }
-}
-
-/* ダークモードでのローディング画面調整 */
-.dark-mode #loading {
-  background-color: #121212;
-}
-
-/* ダークモードでのフォームスタイル調整 */
-.dark-mode .form-container {
-  background-color: #2d2d2d;
-  color: #e0e0e0;
-  border: 1px solid #444;
-}
-
-.dark-mode .form-container h1 {
-  color: #e0e0e0;
-}
-
-.dark-mode .form-group input,
-.dark-mode .form-group textarea {
-  background-color: #1f1f1f;
-  color: #e0e0e0;
-  border-color: #444;
-}
-
-.dark-mode .form-group input::placeholder,
-.dark-mode .form-group textarea::placeholder {
-  color: #888;
-}
-
-.dark-mode .form-group input:focus,
-.dark-mode .form-group textarea:focus {
-  border-color: #76C893;
-  box-shadow: 0 0 0 2px rgba(118, 200, 147, 0.2);
-}
-
-.dark-mode .form-group label {
-  color: #e0e0e0;
-}
-
-/* ダークモードでのファイル入力調整 */
-.dark-mode .file-input-wrapper {
-  background-color: #1f1f1f;
-  border-color: #444;
-  color: #e0e0e0;
-}
-
-.dark-mode .file-input-wrapper:hover {
-  background-color: #2d2d2d;
-  border-color: #76C893;
-}
-
-/* ダークモードでのカテゴリセレクター調整 */
-.dark-mode .select-trigger {
-  background-color: #1f1f1f;
-  border-color: #444;
-  color: #e0e0e0;
-}
-
-.dark-mode .select-trigger:hover,
-.dark-mode .select-trigger:focus {
-  border-color: #76C893;
-}
-
-.dark-mode .select-options {
-  background-color: #2d2d2d;
-  border-color: #444;
-}
-
-.dark-mode .select-options .option {
-  color: #e0e0e0;
-}
-
-.dark-mode .select-options .option:hover {
-  background-color: #444;
-}
-
-/* ダークモードでのイメージプレビュー調整 */
-.dark-mode .image-preview {
-  border-color: #444;
-}
-
-.dark-mode .current-image-label {
-  color: #aaa;
-}
-
-/* ダークモードでのページ固有調整 */
-.dark-mode.page-login,
-.dark-mode.page-register {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-}
-
-.dark-mode .page-login .form-container,
-.dark-mode .page-register .form-container {
-  background: #2d2d2d;
-  color: #e0e0e0;
-  border: 1px solid #444;
-}
-
-.dark-mode .login-header h1,
-.dark-mode .register-header h1 {
-  color: #76C893;
-}
-
-.dark-mode .login-header p,
-.dark-mode .register-header p {
-  color: #aaa;
-}
-
-.dark-mode .login-footer a,
-.dark-mode .register-footer a {
-  color: #76C893;
-}
-
-/* アニメーション効果の追加 */
-.sidebar ul li {
-  transition: all 0.3s ease;
-}
-
-.category-section {
-  animation: fadeInUp 0.5s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* プリント用スタイル */
-@media print {
-  .sidebar,
-  .top-navbar,
-  .modal-overlay,
-  .card-menu,
-  .favorite-toggle,
-  .add-button,
-  .back-button {
-    display: none !important;
-  }
-
-  .main-content {
-    margin-left: 0;
-    margin-top: 0;
-    padding: 20px;
-  }
-
-  .card {
-    break-inside: avoid;
-    margin-bottom: 20px;
-  }
-
-  .category-section {
-    break-inside: avoid;
-    margin-bottom: 30px;
-  }
-
-  body {
-    background-color: white !important;
-    color: black !important;
-  }
-}
-
-/* カスタムスクロールバー（Webkit系ブラウザ） */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #6A994E;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #588640;
-}
-
-/* ダークモードでのスクロールバー */
-.dark-mode ::-webkit-scrollbar-track {
-  background: #2d2d2d;
-}
-
-.dark-mode ::-webkit-scrollbar-thumb {
-  background: #76C893;
-}
-
-.dark-mode ::-webkit-scrollbar-thumb:hover {
-  background: #5fb378;
-}
-
-/* セレクション（テキスト選択）のスタイル */
-::selection {
-  background-color: #6A994E;
-  color: white;
-}
-
-::-moz-selection {
-  background-color: #6A994E;
-  color: white;
-}
-
-.dark-mode ::selection {
-  background-color: #76C893;
-  color: #121212;
-}
-
-.dark-mode ::-moz-selection {
-  background-color: #76C893;
-  color: #121212;
-}
-
-/* フォーカス状態の改善 */
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-a:focus-visible {
-  outline: 2px solid #6A994E;
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-.dark-mode button:focus-visible,
-.dark-mode input:focus-visible,
-.dark-mode textarea:focus-visible,
-.dark-mode select:focus-visible,
-.dark-mode a:focus-visible {
-  outline-color: #76C893;
-}
-
-/* 縮小モーション設定の尊重 */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* カスタムプロパティ（CSS変数）の定義 */
-:root {
-  --primary-color: #6A994E;
-  --primary-hover: #588640;
-  --secondary-color: #ffcd38;
-  --background-light: #fffbe6;
-  --background-white: #ffffff;
-  --text-dark: #1f2d3d;
-  --text-gray: #666666;
-  --border-light: #e0e0e0;
-  --shadow-light: rgba(0, 0, 0, 0.05);
-  --shadow-medium: rgba(0, 0, 0, 0.1);
-  --border-radius: 12px;
-  --border-radius-small: 8px;
-  --transition-fast: 0.2s ease;
-  --transition-normal: 0.3s ease;
-}
-
-/* ダークモード用のCSS変数 */
-.dark-mode {
-  --primary-color: #76C893;
-  --primary-hover: #5fb378;
-  --secondary-color: #ffcd38;
-  --background-light: #121212;
-  --background-white: #2d2d2d;
-  --text-dark: #e0e0e0;
-  --text-gray: #aaaaaa;
-  --border-light: #444444;
-  --shadow-light: rgba(0, 0, 0, 0.3);
-  --shadow-medium: rgba(0, 0, 0, 0.4);
-}
-
-/* ユーティリティクラス */
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
-
-.mt-1 { margin-top: 0.25rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-3 { margin-top: 0.75rem; }
-.mt-4 { margin-top: 1rem; }
-
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mb-4 { margin-bottom: 1rem; }
-
-.p-1 { padding: 0.25rem; }
-.p-2 { padding: 0.5rem; }
-.p-3 { padding: 0.75rem; }
-.p-4 { padding: 1rem; }
-
-.hidden { display: none; }
-.visible { display: block; }
-
-.flex { display: flex; }
-.flex-column { flex-direction: column; }
-.flex-center { justify-content: center; align-items: center; }
-.flex-between { justify-content: space-between; }
-.flex-wrap { flex-wrap: wrap; }
-
-.w-full { width: 100%; }
-.h-full { height: 100%; }
-
-.opacity-50 { opacity: 0.5; }
-.opacity-75 { opacity: 0.75; }
-
-.cursor-pointer { cursor: pointer; }
-.cursor-not-allowed { cursor: not-allowed; }
-
-.overflow-hidden { overflow: hidden; }
-.overflow-auto { overflow: auto; }
-
-.position-relative { position: relative; }
-.position-absolute { position: absolute; }
-.position-fixed { position: fixed; }
-
-.z-10 { z-index: 10; }
-.z-20 { z-index: 20; }
-.z-30 { z-index: 30; }
-
-/* 最終調整 */
-.no-select {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-.smooth-scroll {
-  scroll-behavior: smooth;
-}
-
-/* Webフォントの最適化 */
-.font-optimized {
-  font-display: swap;
-  font-feature-settings: "liga" 1, "kern" 1;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* 最適化されたボックスシャドウ */
-.shadow-soft {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.shadow-medium {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-
-.shadow-large {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
-}
-
-.dark-mode .shadow-soft {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .shadow-medium {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-.dark-mode .shadow-large {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* 最終的なパフォーマンス最適化 */
-.gpu-accelerated {
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-}
-
-/* エラー防止 */
-* {
-  box-sizing: border-box;
-}
-
-*:before,
-*:after {
-  box-sizing: border-box;
-}
-
-/* 画像の最適化 */
-img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* テーブルの基本スタイル（将来の拡張用） */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-}
-
-th,
-td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--border-light);
-}
-
-th {
-  font-weight: 600;
-  background-color: var(--background-white);
-  color: var(--text-dark);
-}
-
-/* 追加のフォームスタイル */
-fieldset {
-  border: 1px solid var(--border-light);
-  border-radius: var(--border-radius-small);
-  padding: 16px;
-  margin-bottom: 20px;
-}
-
-legend {
-  font-weight: 600;
-  color: var(--text-dark);
-  padding: 0 8px;
-}
-
-/* コードブロック（将来の拡張用） */
-code {
-  background-color: #f4f4f4;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9em;
-}
-
-.dark-mode code {
-  background-color: #3a3a3a;
-  color: #e0e0e0;
-}
-
-pre {
-  background-color: #f4f4f4;
-  padding: 16px;
-  border-radius: var(--border-radius-small);
-  overflow-x: auto;
-  font-family: 'Courier New', monospace;
-}
-
-.dark-mode pre {
-  background-color: #2a2a2a;
-  color: #e0e0e0;
-}
-
-/* 最終的なスタイル調整 */
-.fade-in {
-  animation: fadeIn 0.5s ease-in;
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ブラウザ固有の調整 */
-@supports (-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px)) {
-  .backdrop-blur {
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-  }
-}
-
-/* 最終的なメディアクエリ調整 */
-@media (hover: hover) and (pointer: fine) {
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    transition: transform 0.2s ease;
-  }
-}
-
-@media (hover: none) and (pointer: coarse) {
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* CSS Grid サポートチェック */
-@supports (display: grid) {
-  .grid-auto {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-  }
-}
-
-/* Flexbox フォールバック */
-@supports not (display: grid) {
-  .grid-auto {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-  }
-
-  .grid-auto > * {
-    flex: 1 1 280px;
-  }
-}
-
-/* 最終的なZ-index管理 */
-.z-dropdown { z-index: 1000; }
-.z-sticky { z-index: 1020; }
-.z-fixed { z-index: 1030; }
-.z-modal-backdrop { z-index: 1040; }
-.z-modal { z-index: 1050; }
-.z-popover { z-index: 1060; }
-.z-tooltip { z-index: 1070; }
-
-/* 完了 */
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .search-bar {
-    max-width: 400px;
-    flex: 1;
-  }
-
-  /* セクションヘッダーを縦並びに */
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .add-button-container {
-    align-self: flex-end;
-  }
-
-  .add-text {
-    display: none;
-  }
-
-  /* カードリスト調整 */
-  .card-list {
-    gap: 8px;
-  }
-
-  .section-header {
-    gap: 8px;
-  }
-
-  .list {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
-  }
-
-  .overlay-title {
-    font-size: 16px;
-  }
-
-  .page-login .form-container,
-  .page-register .form-container {
-    padding: 1.5rem;
-    margin: 1rem;
-  }
-
-  .login-header h1, .register-header h1 {
-    font-size: 1.5rem;
-  }
-
-  /* モーダル・カテゴリページのレスポンシブ */
-  .modal-content {
-    width: 95%;
-    margin: 20px 0;
-    max-height: 85vh;
-  }
-
-  .modal-header,
-  .modal-body,
-  .modal-footer {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .stat-number {
-    font-size: 24px;
-  }
-
-  .settings-btn {
-    width: 100%;
-    justify-content: center;
-    margin-right: 0;
-  }
-
-  .category-recipes {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px;
-  }
-
-  .category-section {
-    padding: 16px;
-    margin-bottom: 24px;
-  }
-
-  .category-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .category-title {
-    font-size: 18px;
-  }
-
-  .recipe-title {
-    font-size: 13px;
-  }
-
-  .setting-item {
-    padding: 10px 12px;
-  }
-
-  .switch {
-    width: 44px;
-    height: 22px;
-  }
-
-  .slider:before {
-    height: 16px;
-    width: 16px;
-    left: 3px;
-    bottom: 3px;
-  }
-
-  input:checked + .slider:before {
-    transform: translateX(22px);
-  }
-}
-
 /* スマートフォン（480px以下） */
 @media (max-width: 480px) {
   .top-navbar {
@@ -3358,11 +2667,20 @@ pre {
   border: 1px solid #444;
 }
 
+.dark-mode .form-container h1 {
+  color: #e0e0e0;
+}
+
 .dark-mode .form-group input,
 .dark-mode .form-group textarea {
   background-color: #1f1f1f;
   color: #e0e0e0;
   border-color: #444;
+}
+
+.dark-mode .form-group input::placeholder,
+.dark-mode .form-group textarea::placeholder {
+  color: #888;
 }
 
 .dark-mode .form-group input:focus,
@@ -3412,7 +2730,7 @@ pre {
   background-color: #444;
 }
 
-/* ダークモードでのイメージプレビュー調整 */
+/* ダークモードでの画像プレビュー調整 */
 .dark-mode .image-preview {
   border-color: #444;
 }
@@ -3462,40 +2780,6 @@ pre {
 /* アニメーション効果の追加 */
 .sidebar ul li {
   transition: all 0.3s ease;
-}
-
-/* ログアウトボタンの調整 */
-.logout-sidebar-btn {
-  background: none;
-  border: none;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.logout-sidebar-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-.logout-sidebar-btn img {
-  width: 20px;
-  height: 20px;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.logout-sidebar-btn span {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .category-section {
